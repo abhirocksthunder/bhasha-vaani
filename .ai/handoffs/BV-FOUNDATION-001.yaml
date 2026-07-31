@@ -1,0 +1,48 @@
+task_id: BV-FOUNDATION-001
+status: completed
+
+summary:
+  Built the initial Flutter-first BhashaVaani foundation from an empty folder. The app can be run as Flutter Web for Firebase Hosting later and as the basis for Android mobile development.
+
+changed_files:
+  - AGENTS.md
+  - README.md
+  - docs/architecture/overview.md
+  - docs/architecture/boundaries.md
+  - docs/product/vision.md
+  - docs/decisions/ADR-001-flutter-first-firebase-web.md
+  - docs/decisions/ADR-002-local-backend-provider-gateway.md
+  - .ai/project-map.yaml
+  - .ai/current-state.yaml
+  - .ai/active-work.yaml
+  - .ai/known-issues.yaml
+  - .ai/change-log.yaml
+  - apps/mobile_flutter/
+  - apps/api/
+  - platform/provider_gateway/
+  - domains/progress/
+  - domains/tutoring/
+  - language_packs/
+
+decisions:
+  - Flutter is the primary client technology.
+  - Flutter Web will be deployed to Firebase Hosting when remote access is needed.
+  - Backend stays local-first and will expose APIs through a secure tunnel.
+  - Local models are default; frontier models are optional through provider gateway.
+
+tests:
+  passed:
+    - flutter test
+    - flutter analyze
+    - flutter build web --dart-define=BHASHAVAANI_API_URL=http://localhost:8000 --dart-define=BHASHAVAANI_ENV=local
+  not_run: []
+
+remaining:
+  - Implement FastAPI persistence for profiles, languages, sessions, and progress events.
+  - Replace seeded Flutter data with API-backed repositories.
+  - Add Firebase Auth and backend token verification before remote deployment.
+  - Add Android platform scaffold if Flutter create is used for native builds.
+
+warnings:
+  - Firebase-hosted Flutter Web must call the local backend only through authenticated HTTPS.
+  - Generated build output exists locally at apps/mobile_flutter/build/web but is ignored by .gitignore.

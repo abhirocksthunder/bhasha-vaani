@@ -1,0 +1,16 @@
+[project]
+name = "bhasha-vaani-api"
+version = "0.1.0"
+description = "Local BhashaVaani FastAPI backend"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi",
+  "uvicorn[standard]",
+  "pydantic",
+]
+
+[tool.setuptools]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

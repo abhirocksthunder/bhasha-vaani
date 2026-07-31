@@ -1,0 +1,38 @@
+task_id: BV-OUTBOX-001
+status: completed
+
+summary:
+  Added durable Flutter offline outbox storage for failed progress event uploads. Failed lesson completion events are stored in shared_preferences, duplicate queued event IDs are ignored, queued counts appear in lesson/progress UI, and queued events are retried idempotently when the backend connection recovers.
+
+changed_files:
+  - apps/mobile_flutter/pubspec.yaml
+  - apps/mobile_flutter/pubspec.lock
+  - apps/mobile_flutter/lib/app/bhasha_vaani_app.dart
+  - apps/mobile_flutter/lib/features/learning_session/presentation/learning_session_screen.dart
+  - apps/mobile_flutter/lib/features/progress/presentation/progress_screen.dart
+  - apps/mobile_flutter/lib/features/progress/domain/progress_event.dart
+  - apps/mobile_flutter/lib/features/progress/domain/progress_outbox_repository.dart
+  - apps/mobile_flutter/lib/features/progress/domain/progress_repository.dart
+  - apps/mobile_flutter/test/progress_outbox_repository_test.dart
+
+decisions:
+  - Use shared_preferences for the first cross-platform durable outbox because it works on Flutter Web and mobile.
+  - Store serialized typed ProgressEvent envelopes rather than partial retry payloads.
+  - Flush queued events before fetching the latest progress projection.
+
+tests:
+  passed:
+    - flutter pub get
+    - flutter analyze
+    - flutter test
+    - flutter build web --dart-define=BHASHAVAANI_API_URL=http://127.0.0.1:6001 --dart-define=BHASHAVAANI_ENV=local
+    - python -m unittest discover -s tests
+  not_run: []
+
+remaining:
+  - Add richer manual sync controls.
+  - Add retry backoff and per-event failure reasons.
+  - Move mobile offline storage to a stronger local database when native Android work begins.
+
+warnings:
+  - shared_preferences is acceptable for the first outbox but may not be enough for large offline lesson batches.

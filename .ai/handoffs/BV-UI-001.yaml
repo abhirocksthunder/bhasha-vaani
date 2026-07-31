@@ -1,0 +1,37 @@
+task_id: BV-UI-001
+status: completed
+
+summary:
+  Redesigned the Flutter client with a glossy, mobile-first visual system. Added reusable UI components, adaptive navigation, responsive screen headers, refreshed profile/language cards, a richer lesson player, and a progress dashboard that scales from phone to web.
+
+changed_files:
+  - apps/mobile_flutter/lib/app/bhasha_vaani_theme.dart
+  - apps/mobile_flutter/lib/app/home_shell.dart
+  - apps/mobile_flutter/lib/app/ui/glossy_panel.dart
+  - apps/mobile_flutter/lib/app/ui/screen_header.dart
+  - apps/mobile_flutter/lib/app/ui/status_badge.dart
+  - apps/mobile_flutter/lib/features/profiles/presentation/profile_selection_screen.dart
+  - apps/mobile_flutter/lib/features/language_selection/presentation/language_selection_screen.dart
+  - apps/mobile_flutter/lib/features/learning_session/presentation/learning_session_screen.dart
+  - apps/mobile_flutter/lib/features/progress/presentation/progress_screen.dart
+
+decisions:
+  - Use bottom navigation on mobile and a side rail on wider web/tablet layouts.
+  - Keep component border radius at 8px while using blur, translucency, color accents, and soft shadows for the glossy feel.
+  - Preserve seeded data only until the next API-backed stage.
+
+tests:
+  passed:
+    - flutter analyze
+    - flutter test
+    - flutter build web --dart-define=BHASHAVAANI_API_URL=http://127.0.0.1:6001 --dart-define=BHASHAVAANI_ENV=local
+  not_run: []
+
+remaining:
+  - Add visual regression screenshots once browser automation is configured.
+  - Connect screens to backend repositories.
+  - Add loading, empty, and error states with the same visual system.
+
+warnings:
+  - The app is still using seeded in-memory data.
+  - Frontend local port is 6002 because Chromium blocks 6000.

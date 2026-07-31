@@ -1,0 +1,36 @@
+task_id: BV-UXSTATE-001
+status: completed
+
+summary:
+  Added production-feeling async states to the Flutter app. The app now shows glossy loading panels while connecting, retryable offline fallback panels when the backend is unreachable, useful empty states, and queued/saved completion feedback in the lesson flow.
+
+changed_files:
+  - apps/mobile_flutter/lib/app/app_load_state.dart
+  - apps/mobile_flutter/lib/app/bhasha_vaani_app.dart
+  - apps/mobile_flutter/lib/app/ui/state_panels.dart
+  - apps/mobile_flutter/lib/features/profiles/presentation/profile_selection_screen.dart
+  - apps/mobile_flutter/lib/features/language_selection/presentation/language_selection_screen.dart
+  - apps/mobile_flutter/lib/features/learning_session/presentation/learning_session_screen.dart
+  - apps/mobile_flutter/lib/features/progress/presentation/progress_screen.dart
+  - apps/mobile_flutter/test/app_smoke_test.dart
+
+decisions:
+  - Keep seed data usable as an explicit offline fallback while the local backend is unavailable.
+  - Use reusable state panels so future screens inherit the same mobile-first error/loading language.
+  - Show queued completion feedback in lesson flow before building persistent Flutter outbox storage.
+
+tests:
+  passed:
+    - flutter analyze
+    - flutter test
+    - flutter build web --dart-define=BHASHAVAANI_API_URL=http://127.0.0.1:6001 --dart-define=BHASHAVAANI_ENV=local
+    - python -m unittest discover -s tests
+  not_run: []
+
+remaining:
+  - Add typed progress event contracts.
+  - Persist queued offline completions locally in Flutter.
+  - Add screenshot-based visual checks later.
+
+warnings:
+  - Offline completion is currently a visible queued state, not yet a durable local outbox.

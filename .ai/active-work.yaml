@@ -1,0 +1,72 @@
+id: BV-PROVIDER-001
+title: Connect tutor pet to local model provider gateway
+status: planned
+owner_agent: voice-agent
+
+objective:
+  Route tutor pet word questions through the provider gateway so local Ollama or LM Studio can generate richer language explanations.
+
+relevant_paths:
+  - apps/api/
+  - platform/provider_gateway/
+  - apps/mobile_flutter/
+
+acceptance_criteria:
+  - provider config controls active local model route
+  - tutor pet endpoint can call configured local provider when available
+  - fallback remains deterministic when provider is unavailable
+  - UI shows which model route answered
+
+completed:
+  - Flutter-first foundation completed
+  - glossy mobile-first UI stage completed
+  - backend dev API exposes profiles and languages
+  - backend dev API accepts idempotent progress events
+  - Flutter app has API repositories for profiles, languages, and progress
+  - lesson completion posts activity_completed events to backend
+  - backend storage is SQLite-backed and survives process restarts
+  - backend route and storage tests cover seed data and idempotent progress events
+  - Flutter app has polished loading, empty, retryable error, and offline queue states
+  - Flutter tests cover backend-unavailable fallback UI
+  - backend defines typed ProgressEventEnvelope
+  - Flutter defines typed ProgressEvent
+  - tests cover backend contract validation and Flutter serialization
+  - failed progress event uploads are saved in durable Flutter outbox storage
+  - queued outbox count is visible in lesson and progress UI
+  - retry attempts upload queued events idempotently when backend reconnects
+  - Flutter tests cover outbox persistence and duplicate queue behavior
+  - language manifest JSON Schema added
+  - Kannada manifest validates
+  - invalid manifest tests produce actionable errors
+  - validator emits backend-shaped language capability data
+  - Hindi starter manifest added and validates
+  - backend SQLite language seed upserts from validated manifests
+  - /languages serves Kannada full and Hindi preview after backend restart
+  - /languages reads validated manifests directly at runtime
+  - tests cover manifest-derived language registry output
+  - Languages tab shows visible manifest registry strip and pack count
+  - backend rejects unsupported progress event schema versions
+  - docs explain progress event versioning rules
+  - profile edit bottom sheet added
+  - Kannada starter lesson expanded to six activities
+  - confusing outbox wording changed to offline sync wording
+  - FastAPI dependencies installed in apps/api/.api-venv
+  - live backend now runs with Uvicorn/FastAPI on port 6001
+  - floating tutor pet UI added to Flutter
+  - /assistant/word endpoint added and tested
+
+remaining:
+  - connect provider gateway to Ollama or LM Studio
+  - expose provider availability in UI
+  - improve tutor pet prompt/response schema
+
+last_handoff:
+  summary: FastAPI runtime and floating tutor pet completed; next work should connect real local model providers.
+  changed_files:
+    - .ai/
+    - apps/mobile_flutter/
+    - apps/api/
+    - domains/
+  warnings:
+    - Keep backend on 6001 and frontend on 6002 locally; Chromium blocks frontend port 6000.
+    - Tutor pet currently has curated/deterministic answers and provider-ready fallback, not real LLM generation yet.

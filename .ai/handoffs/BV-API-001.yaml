@@ -1,0 +1,44 @@
+task_id: BV-API-001
+status: in_progress
+
+summary:
+  Started the API-backed data stage. The dev backend now exposes profiles, languages, learning session creation, progress summaries, and idempotent progress event recording. The Flutter app now has API repositories and records lesson completion through the backend.
+
+changed_files:
+  - apps/api/dev_server.py
+  - apps/mobile_flutter/pubspec.yaml
+  - apps/mobile_flutter/pubspec.lock
+  - apps/mobile_flutter/lib/core/api/api_client.dart
+  - apps/mobile_flutter/lib/app/bhasha_vaani_app.dart
+  - apps/mobile_flutter/lib/features/profiles/domain/profile_repository.dart
+  - apps/mobile_flutter/lib/features/profiles/domain/learner_profile.dart
+  - apps/mobile_flutter/lib/features/language_selection/domain/language_repository.dart
+  - apps/mobile_flutter/lib/features/language_selection/domain/language_pack.dart
+  - apps/mobile_flutter/lib/features/progress/domain/progress_repository.dart
+  - apps/mobile_flutter/lib/features/progress/domain/progress_summary.dart
+  - apps/mobile_flutter/lib/features/learning_session/presentation/learning_session_screen.dart
+
+decisions:
+  - Use the `http` package for cross-platform Flutter API calls.
+  - Keep seeded data as fallback while the local backend is still a dev server.
+  - Keep progress event upload idempotent through `event_id`.
+
+tests:
+  passed:
+    - flutter pub get
+    - flutter analyze
+    - flutter test
+    - flutter build web --dart-define=BHASHAVAANI_API_URL=http://127.0.0.1:6001 --dart-define=BHASHAVAANI_ENV=local
+    - GET /profiles
+    - POST /progress/events duplicate check
+  not_run:
+    - backend automated route tests
+
+remaining:
+  - Move backend from standard-library dev server to real FastAPI with persistent storage.
+  - Add typed progress event models.
+  - Add polished loading, empty, offline, and error states.
+  - Add backend route tests.
+
+warnings:
+  - Progress events are still in memory and reset when the dev backend restarts.

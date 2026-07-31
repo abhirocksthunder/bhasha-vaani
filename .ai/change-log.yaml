@@ -1,0 +1,264 @@
+changes:
+  - date: 2026-07-31
+    id: BV-FASTAPI-PET-001
+    summary: Switched live backend to FastAPI/Uvicorn and added floating tutor pet word assistant with language/model selectors.
+    changed_paths:
+      - apps/api/.api-venv/
+      - apps/api/pyproject.toml
+      - apps/api/README.md
+      - apps/api/app/main.py
+      - apps/api/app/word_assistant.py
+      - apps/api/dev_server.py
+      - apps/api/tests/test_word_assistant.py
+      - apps/api/tests/test_dev_server.py
+      - apps/mobile_flutter/lib/app/home_shell.dart
+      - apps/mobile_flutter/lib/app/bhasha_vaani_app.dart
+      - apps/mobile_flutter/lib/features/tutor_pet/
+      - .gitignore
+      - .ai/current-state.yaml
+      - .ai/active-work.yaml
+    validation:
+      - pip install -e .
+      - uvicorn app.main:app --host 127.0.0.1 --port 6001
+      - python -m unittest discover -s tests
+      - flutter analyze
+      - flutter test
+      - flutter build web --dart-define=BHASHAVAANI_API_URL=http://127.0.0.1:6001 --dart-define=BHASHAVAANI_ENV=local
+      - manual POST /assistant/word
+
+  - date: 2026-07-31
+    id: BV-EVENTVERSION-001
+    summary: Added progress event schema version guard, profile edit UI, expanded Kannada starter activities, and clearer offline sync wording.
+    changed_paths:
+      - apps/api/app/progress_event.py
+      - apps/api/tests/test_progress_event.py
+      - docs/contracts/progress-event-versioning.md
+      - apps/mobile_flutter/lib/app/bhasha_vaani_app.dart
+      - apps/mobile_flutter/lib/features/profiles/domain/learner_profile.dart
+      - apps/mobile_flutter/lib/features/profiles/domain/profile_repository.dart
+      - apps/mobile_flutter/lib/features/profiles/presentation/profile_selection_screen.dart
+      - apps/mobile_flutter/lib/features/learning_session/presentation/learning_session_screen.dart
+      - .ai/current-state.yaml
+      - .ai/active-work.yaml
+    validation:
+      - python -m unittest discover -s tests
+      - flutter analyze
+      - flutter test
+      - flutter build web --dart-define=BHASHAVAANI_API_URL=http://127.0.0.1:6001 --dart-define=BHASHAVAANI_ENV=local
+      - manual schema_version 2 rejection check
+
+  - date: 2026-07-31
+    id: BV-LANGREGISTRY-001
+    summary: Made backend /languages read validated manifests directly and added visible manifest registry UI on the Languages tab.
+    changed_paths:
+      - apps/api/app/language_registry.py
+      - apps/api/app/storage.py
+      - apps/api/dev_server.py
+      - apps/api/app/main.py
+      - apps/api/tests/test_language_registry.py
+      - apps/api/tests/test_dev_server.py
+      - apps/api/tests/test_storage.py
+      - apps/mobile_flutter/lib/features/language_selection/presentation/language_selection_screen.dart
+      - .ai/current-state.yaml
+      - .ai/active-work.yaml
+    validation:
+      - python tools/validate_language_packs.py
+      - python -m unittest discover -s tests
+      - flutter analyze
+      - flutter test
+      - flutter build web --dart-define=BHASHAVAANI_API_URL=http://127.0.0.1:6001 --dart-define=BHASHAVAANI_ENV=local
+      - manual GET /languages
+
+  - date: 2026-07-31
+    id: BV-HINDI-001
+    summary: Added validated Hindi starter language pack as preview and refreshed backend language seed data from manifests.
+    changed_paths:
+      - language_packs/hi/manifest.yaml
+      - apps/api/app/storage.py
+      - apps/api/tests/test_language_pack_validation.py
+      - apps/api/tests/test_storage.py
+      - docs/contracts/language-pack-manifest.md
+      - .ai/current-state.yaml
+      - .ai/active-work.yaml
+    validation:
+      - python tools/validate_language_packs.py
+      - python -m unittest discover -s tests
+      - flutter analyze
+      - flutter test
+      - flutter build web --dart-define=BHASHAVAANI_API_URL=http://127.0.0.1:6001 --dart-define=BHASHAVAANI_ENV=local
+      - manual GET /languages confirmed Kannada full and Hindi preview
+
+  - date: 2026-07-31
+    id: BV-LANGSCHEMA-001
+    summary: Added machine-readable Language Pack manifest schema, dependency-free validator, Kannada validation, invalid-manifest tests, and language capability output.
+    changed_paths:
+      - language_packs/schema/manifest.schema.json
+      - language_packs/schema/manifest.schema.yaml
+      - tools/validate_language_packs.py
+      - apps/api/tests/test_language_pack_validation.py
+      - apps/api/tests/fixtures/language_packs/
+      - docs/contracts/language-pack-manifest.md
+      - README.md
+      - .ai/current-state.yaml
+      - .ai/active-work.yaml
+    validation:
+      - python tools/validate_language_packs.py
+      - python -m unittest discover -s tests
+      - flutter analyze
+      - flutter test
+      - flutter build web --dart-define=BHASHAVAANI_API_URL=http://127.0.0.1:6001 --dart-define=BHASHAVAANI_ENV=local
+
+  - date: 2026-07-31
+    id: BV-OUTBOX-001
+    summary: Added durable Flutter offline progress outbox using shared_preferences, queued count UI, and automatic queued event flushing on backend reconnect.
+    changed_paths:
+      - apps/mobile_flutter/pubspec.yaml
+      - apps/mobile_flutter/pubspec.lock
+      - apps/mobile_flutter/lib/app/bhasha_vaani_app.dart
+      - apps/mobile_flutter/lib/features/learning_session/presentation/learning_session_screen.dart
+      - apps/mobile_flutter/lib/features/progress/presentation/progress_screen.dart
+      - apps/mobile_flutter/lib/features/progress/domain/progress_event.dart
+      - apps/mobile_flutter/lib/features/progress/domain/progress_outbox_repository.dart
+      - apps/mobile_flutter/lib/features/progress/domain/progress_repository.dart
+      - apps/mobile_flutter/test/progress_outbox_repository_test.dart
+      - .ai/current-state.yaml
+      - .ai/active-work.yaml
+    validation:
+      - flutter pub get
+      - flutter analyze
+      - flutter test
+      - flutter build web --dart-define=BHASHAVAANI_API_URL=http://127.0.0.1:6001 --dart-define=BHASHAVAANI_ENV=local
+      - python -m unittest discover -s tests
+
+  - date: 2026-07-31
+    id: BV-CONTRACT-001
+    summary: Added typed progress event contracts in backend and Flutter, documented the envelope, and validated required-field behavior.
+    changed_paths:
+      - apps/api/app/progress_event.py
+      - apps/api/app/storage.py
+      - apps/api/dev_server.py
+      - apps/api/tests/test_progress_event.py
+      - apps/api/tests/test_storage.py
+      - apps/mobile_flutter/lib/features/progress/domain/progress_event.dart
+      - apps/mobile_flutter/lib/features/progress/domain/progress_repository.dart
+      - apps/mobile_flutter/test/progress_event_test.dart
+      - docs/contracts/progress-event-envelope.md
+      - .ai/current-state.yaml
+      - .ai/active-work.yaml
+    validation:
+      - python -m unittest discover -s tests
+      - flutter analyze
+      - flutter test
+      - flutter build web --dart-define=BHASHAVAANI_API_URL=http://127.0.0.1:6001 --dart-define=BHASHAVAANI_ENV=local
+      - manual valid/invalid progress event API checks
+
+  - date: 2026-07-31
+    id: BV-UXSTATE-001
+    summary: Added polished Flutter loading, empty, retryable error, and offline queue states across the API-backed app.
+    changed_paths:
+      - apps/mobile_flutter/lib/app/app_load_state.dart
+      - apps/mobile_flutter/lib/app/bhasha_vaani_app.dart
+      - apps/mobile_flutter/lib/app/ui/state_panels.dart
+      - apps/mobile_flutter/lib/features/profiles/presentation/
+      - apps/mobile_flutter/lib/features/language_selection/presentation/
+      - apps/mobile_flutter/lib/features/learning_session/presentation/
+      - apps/mobile_flutter/lib/features/progress/presentation/
+      - apps/mobile_flutter/test/app_smoke_test.dart
+      - .ai/current-state.yaml
+      - .ai/active-work.yaml
+    validation:
+      - flutter analyze
+      - flutter test
+      - flutter build web --dart-define=BHASHAVAANI_API_URL=http://127.0.0.1:6001 --dart-define=BHASHAVAANI_ENV=local
+      - python -m unittest discover -s tests
+
+  - date: 2026-07-31
+    id: BV-PERSIST-001
+    summary: Replaced in-memory backend state with SQLite persistence and added backend storage/route tests.
+    changed_paths:
+      - apps/api/app/storage.py
+      - apps/api/app/main.py
+      - apps/api/app/__init__.py
+      - apps/api/dev_server.py
+      - apps/api/tests/
+      - apps/api/README.md
+      - .gitignore
+      - .ai/current-state.yaml
+      - .ai/active-work.yaml
+    validation:
+      - python -m unittest discover -s tests
+      - flutter analyze
+      - flutter test
+      - manual backend restart persistence check
+
+  - date: 2026-07-31
+    id: BV-API-001
+    summary: Began API-backed data stage with backend dev endpoints, Flutter repositories, profile/language API loading, and progress event recording from lesson completion.
+    changed_paths:
+      - apps/api/dev_server.py
+      - apps/mobile_flutter/pubspec.yaml
+      - apps/mobile_flutter/pubspec.lock
+      - apps/mobile_flutter/lib/core/api/api_client.dart
+      - apps/mobile_flutter/lib/app/bhasha_vaani_app.dart
+      - apps/mobile_flutter/lib/features/profiles/domain/
+      - apps/mobile_flutter/lib/features/language_selection/domain/
+      - apps/mobile_flutter/lib/features/progress/domain/
+      - apps/mobile_flutter/lib/features/learning_session/presentation/
+      - .ai/current-state.yaml
+      - .ai/active-work.yaml
+    validation:
+      - flutter pub get
+      - flutter analyze
+      - flutter test
+      - flutter build web --dart-define=BHASHAVAANI_API_URL=http://127.0.0.1:6001 --dart-define=BHASHAVAANI_ENV=local
+      - manual backend checks for /profiles and /progress/events
+
+  - date: 2026-07-31
+    id: BV-UI-001
+    summary: Redesigned Flutter client with glossy mobile-first surfaces, adaptive navigation, responsive lesson controls, and refreshed progress/profile/language screens.
+    changed_paths:
+      - apps/mobile_flutter/lib/app/
+      - apps/mobile_flutter/lib/features/profiles/presentation/
+      - apps/mobile_flutter/lib/features/language_selection/presentation/
+      - apps/mobile_flutter/lib/features/learning_session/presentation/
+      - apps/mobile_flutter/lib/features/progress/presentation/
+      - .ai/current-state.yaml
+      - .ai/active-work.yaml
+    validation:
+      - flutter analyze
+      - flutter test
+      - flutter build web --dart-define=BHASHAVAANI_API_URL=http://127.0.0.1:6001 --dart-define=BHASHAVAANI_ENV=local
+
+  - date: 2026-07-31
+    id: BV-DEVPORTS-002
+    summary: Moved local Flutter Web frontend from unsafe browser port 6000 to 6002 while keeping backend on 6001.
+    changed_paths:
+      - apps/api/README.md
+      - .ai/current-state.yaml
+
+  - date: 2026-07-31
+    id: BV-DEVPORTS-001
+    summary: Set local development ports to frontend 6000 and backend 6001, and added a lightweight dev backend server.
+    changed_paths:
+      - apps/mobile_flutter/lib/core/config/app_config.dart
+      - apps/api/README.md
+      - apps/api/dev_server.py
+      - .ai/current-state.yaml
+
+  - date: 2026-07-31
+    id: BV-FOUNDATION-001
+    summary: Completed Flutter-first BhashaVaani foundation with AI memory, architecture docs, initial Flutter app, backend placeholders, provider gateway contract, Kannada manifest, and validation.
+    changed_paths:
+      - AGENTS.md
+      - README.md
+      - docs/
+      - .ai/
+      - apps/mobile_flutter/
+      - apps/api/
+      - platform/
+      - domains/
+      - language_packs/
+    validation:
+      - flutter test
+      - flutter analyze
+      - flutter build web --dart-define=BHASHAVAANI_API_URL=http://localhost:8000 --dart-define=BHASHAVAANI_ENV=local

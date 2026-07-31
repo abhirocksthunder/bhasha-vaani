@@ -1,0 +1,41 @@
+task_id: BV-PERSIST-001
+status: completed
+
+summary:
+  Added SQLite-backed persistence to the local backend. Profiles, languages, learning sessions, and progress events now live in apps/api/data/bhasha_vaani.db. Progress projections survive backend restarts, and duplicate progress events remain idempotent by event_id.
+
+changed_files:
+  - apps/api/app/__init__.py
+  - apps/api/app/storage.py
+  - apps/api/app/main.py
+  - apps/api/dev_server.py
+  - apps/api/tests/test_storage.py
+  - apps/api/tests/test_dev_server.py
+  - apps/api/README.md
+  - .gitignore
+  - .ai/current-state.yaml
+  - .ai/active-work.yaml
+  - .ai/change-log.yaml
+
+decisions:
+  - Use SQLite for the local-first backend persistence layer.
+  - Keep the standard-library dev server runnable until FastAPI dependencies are installed.
+  - Make the FastAPI placeholder use the same storage module to avoid divergent behavior.
+
+tests:
+  passed:
+    - python -m unittest discover -s tests
+    - flutter analyze
+    - flutter test
+    - manual POST /progress/events followed by backend restart and projection check
+  not_run:
+    - FastAPI runtime tests because FastAPI is not installed in the available Python runtime.
+
+remaining:
+  - Add polished Flutter loading, empty, offline, and error states.
+  - Define typed progress event contracts in backend and Flutter code.
+  - Install FastAPI dependencies and switch the live backend runner to the FastAPI app.
+
+warnings:
+  - apps/api/data/ is ignored and contains local runtime state.
+  - Frontend remains on 6002; backend remains on 6001.

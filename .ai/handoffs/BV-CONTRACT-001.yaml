@@ -1,0 +1,39 @@
+task_id: BV-CONTRACT-001
+status: completed
+
+summary:
+  Replaced loose progress event maps with typed backend and Flutter contracts. The backend now validates required envelope fields and object payloads before persistence. Flutter activity completion now serializes through a ProgressEvent model. The contract is documented in docs/contracts/progress-event-envelope.md.
+
+changed_files:
+  - apps/api/app/progress_event.py
+  - apps/api/app/storage.py
+  - apps/api/dev_server.py
+  - apps/api/tests/test_progress_event.py
+  - apps/api/tests/test_storage.py
+  - apps/mobile_flutter/lib/features/progress/domain/progress_event.dart
+  - apps/mobile_flutter/lib/features/progress/domain/progress_repository.dart
+  - apps/mobile_flutter/test/progress_event_test.dart
+  - docs/contracts/progress-event-envelope.md
+
+decisions:
+  - `payload` must always be an object.
+  - Required envelope fields are validated before idempotency/persistence.
+  - Flutter owns event construction for client-side activity completion.
+
+tests:
+  passed:
+    - python -m unittest discover -s tests
+    - flutter analyze
+    - flutter test
+    - flutter build web --dart-define=BHASHAVAANI_API_URL=http://127.0.0.1:6001 --dart-define=BHASHAVAANI_ENV=local
+    - manual valid progress event accepted
+    - manual malformed progress event rejected
+  not_run: []
+
+remaining:
+  - Add durable Flutter offline outbox storage.
+  - Add event schema version migration rules.
+  - Add generated API/client contract checks later.
+
+warnings:
+  - Live API still uses dev_server.py until FastAPI dependencies are installed.

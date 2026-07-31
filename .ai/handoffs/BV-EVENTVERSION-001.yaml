@@ -1,0 +1,38 @@
+task_id: BV-EVENTVERSION-001
+status: completed
+
+summary:
+  Added progress event schema version rules and completed the requested visible UI fixes. The backend now rejects unsupported schema versions, the profile screen has an edit bottom sheet, the Kannada starter lesson has six activities instead of two, and the confusing outbox label now reads as offline sync readiness.
+
+changed_files:
+  - apps/api/app/progress_event.py
+  - apps/api/tests/test_progress_event.py
+  - docs/contracts/progress-event-versioning.md
+  - apps/mobile_flutter/lib/app/bhasha_vaani_app.dart
+  - apps/mobile_flutter/lib/features/profiles/domain/learner_profile.dart
+  - apps/mobile_flutter/lib/features/profiles/domain/profile_repository.dart
+  - apps/mobile_flutter/lib/features/profiles/presentation/profile_selection_screen.dart
+  - apps/mobile_flutter/lib/features/learning_session/presentation/learning_session_screen.dart
+
+decisions:
+  - Only progress event schema version 1 is accepted for now.
+  - Unknown future event schema versions are rejected rather than guessed.
+  - Profile edits use the existing POST /profiles upsert route.
+  - The seeded lesson remains local for now but has enough activities to demonstrate normal next-step flow.
+
+tests:
+  passed:
+    - python -m unittest discover -s tests
+    - flutter analyze
+    - flutter test
+    - flutter build web --dart-define=BHASHAVAANI_API_URL=http://127.0.0.1:6001 --dart-define=BHASHAVAANI_ENV=local
+    - manual schema_version 2 rejection check
+  not_run: []
+
+remaining:
+  - Move starter lesson activities into language pack curriculum files.
+  - Add more robust profile edit tests.
+  - Switch live backend to FastAPI runtime.
+
+warnings:
+  - Hard refresh the Flutter Web tab if old UI remains visible.

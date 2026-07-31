@@ -1,0 +1,30 @@
+language:
+  code: hi
+  name: Hindi
+  native_name: Hindi
+  writing_system: devanagari
+  direction: ltr
+
+support:
+  transliteration: true
+  speech_to_text: false
+  text_to_speech: false
+  pronunciation_assessment: later
+
+explanation_languages:
+  - English
+  - Telugu
+
+levels:
+  - absolute_beginner
+  - beginner
+
+curriculum:
+  entrypoint: curriculum/starter.yaml
+
+voice:
+  preferred_stt_provider: none
+  preferred_tts_provider: none
+  fallback_provider: local_or_configured_tts
+
+status: preview

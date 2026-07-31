@@ -1,0 +1,30 @@
+language:
+  code: kn
+  name: Kannada
+  native_name: Kannada
+  writing_system: kannada
+  direction: ltr
+
+support:
+  transliteration: true
+  speech_to_text: true
+  text_to_speech: true
+  pronunciation_assessment: basic
+
+explanation_languages:
+  - English
+  - Telugu
+
+levels:
+  - absolute_beginner
+  - beginner
+
+curriculum:
+  entrypoint: curriculum/starter.yaml
+
+voice:
+  preferred_stt_provider: local_whisper
+  preferred_tts_provider: local_or_configured_tts
+  fallback_provider: none
+
+status: full

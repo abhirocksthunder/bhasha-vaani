@@ -1,0 +1,28 @@
+language:
+  code: xx
+  name: Broken
+  native_name: Broken
+  writing_system: latin
+  direction: ltr
+
+support:
+  transliteration: true
+  speech_to_text: false
+  text_to_speech: false
+  pronunciation_assessment: none
+
+explanation_languages:
+  - English
+
+levels:
+  - absolute_beginner
+
+curriculum:
+  entrypoint: curriculum/starter.yaml
+
+voice:
+  preferred_stt_provider: none
+  preferred_tts_provider: none
+  fallback_provider: none
+
+status: whatever

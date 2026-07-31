@@ -1,0 +1,47 @@
+project:
+  name: BhashaVaani
+  architecture: local_ai_first_modular_platform
+  primary_client: Flutter
+  web_hosting: Firebase Hosting for Flutter Web
+  backend: FastAPI planned on local PC
+  ai_provider_strategy: provider_gateway
+  progress_model: event_sourced
+  state_authority: server
+
+domains:
+  mobile:
+    path: apps/mobile_flutter
+    purpose: Primary Flutter client for web and Android
+    docs:
+      - docs/decisions/ADR-001-flutter-first-firebase-web.md
+
+  api:
+    path: apps/api
+    purpose: Local backend API placeholder
+    docs:
+      - docs/architecture/overview.md
+
+  progress:
+    path: domains/progress
+    purpose: Append-only progress events and deterministic projections
+
+  tutoring:
+    path: domains/tutoring
+    purpose: Lesson orchestration using language pack contracts
+
+  language_packs:
+    path: language_packs
+    purpose: Installable language-specific curriculum and capabilities
+
+platform:
+  provider_gateway:
+    path: platform/provider_gateway
+    purpose: Local and frontier AI provider abstraction
+
+  family_profiles:
+    path: platform/family_profiles
+    purpose: Family account and learner profile rules
+
+  language_registry:
+    path: platform/language_registry
+    purpose: Language capability discovery

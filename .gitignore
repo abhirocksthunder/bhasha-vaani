@@ -1,0 +1,26 @@
+# Flutter
+apps/mobile_flutter/.dart_tool/
+apps/mobile_flutter/.packages
+apps/mobile_flutter/build/
+apps/mobile_flutter/flutter-web*.log
+apps/api/dev-server*.log
+apps/api/uvicorn*.log
+apps/api/data/
+apps/api/.api-venv/
+
+# Python
+__pycache__/
+.pytest_cache/
+.venv/
+venv/
+
+# Local config
+.env
+.env.*
+!.env.example
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,63 @@
+version: 0.1.0
+updated_at: 2026-07-31T16:30:00+05:30
+
+milestone:
+  name: flutter_first_foundation
+  status: completed
+
+implemented:
+  repository:
+    - initial architecture documentation
+    - AI-readable project memory
+    - Flutter-first app skeleton
+  backend:
+    - FastAPI placeholder with health and languages endpoints
+    - provider gateway contract and config
+    - standard-library dev API server for port 6001
+    - dev endpoints for profiles, learning sessions, progress summaries, and idempotent progress events
+    - SQLite persistence for profiles, languages, learning sessions, and progress events
+    - backend storage and route tests
+    - typed progress event envelope with required-field validation
+    - runtime language registry reads validated manifests directly
+    - progress event schema version guard rejects unsupported versions
+    - FastAPI/Uvicorn runtime installed and running on port 6001
+    - word assistant endpoint for tutor pet
+  mobile:
+    - Flutter Web and Android-ready app shell
+    - glossy mobile-first profile selection screen
+    - glossy mobile-first language selection screen
+    - responsive guided lesson screen
+    - responsive progress dashboard
+    - API repositories for profiles, languages, and progress
+    - polished loading, empty, retryable error, and offline queue states
+    - typed ProgressEvent model used for activity completion serialization
+    - durable Flutter progress outbox using shared_preferences
+    - queued event count in lesson and progress UI
+    - Languages tab shows manifest registry and pack count
+    - profile edit bottom sheet for current learner settings
+    - Kannada starter lesson expanded from 2 to 6 activities
+    - floating tutor pet for asking words by language and model route
+  language_packs:
+    - Kannada starter manifest
+    - Hindi starter manifest
+    - JSON Schema manifest contract
+    - dependency-free language pack validator
+    - tests for valid and invalid manifests
+
+decisions:
+  - flutter_first_firebase_web
+  - local_backend_provider_gateway
+
+next_priorities:
+  - connect provider gateway to local Ollama or LM Studio for tutor pet answers
+  - add Hindi starter curriculum
+  - add stronger native mobile offline database later
+  - run frontend on port 6002 and backend on port 6001 during local development
+  - avoid frontend port 6000 because Chromium blocks it as unsafe
+
+known_risks:
+  - Firebase remote frontend requires secure backend tunnel and auth
+  - local PC backend availability depends on machine uptime and network
+  - Flutter Web is suitable for anywhere access but native Android remains the priority for audio and offline depth
+  - runnable local API is still the standard-library dev server because FastAPI is not installed in the available Python runtime
+  - queued offline events are durable locally, but retry controls are still basic

@@ -1,0 +1,38 @@
+task_id: BV-LANGREGISTRY-001
+status: completed
+
+summary:
+  Made the backend language registry derive /languages directly from validated Language Pack manifests at runtime. Added a visible Manifest registry strip and pack count to the Flutter Languages tab so users can see the refreshed registry state.
+
+changed_files:
+  - apps/api/app/language_registry.py
+  - apps/api/app/storage.py
+  - apps/api/dev_server.py
+  - apps/api/app/main.py
+  - apps/api/tests/test_language_registry.py
+  - apps/api/tests/test_dev_server.py
+  - apps/api/tests/test_storage.py
+  - apps/mobile_flutter/lib/features/language_selection/presentation/language_selection_screen.dart
+
+decisions:
+  - /languages should use manifest-derived capability data directly.
+  - SQLite can retain a languages table for future relational use, but it is no longer the source of truth for language capability display.
+  - Add a visible Languages tab registry strip to make backend/data stages easier to confirm in the UI.
+
+tests:
+  passed:
+    - python tools/validate_language_packs.py
+    - python -m unittest discover -s tests
+    - flutter analyze
+    - flutter test
+    - flutter build web --dart-define=BHASHAVAANI_API_URL=http://127.0.0.1:6001 --dart-define=BHASHAVAANI_ENV=local
+    - manual GET /languages
+  not_run: []
+
+remaining:
+  - Add event schema version rules.
+  - Add Hindi starter curriculum.
+  - Install FastAPI runtime when dependency setup is available.
+
+warnings:
+  - Hard refresh the browser tab after frontend restarts if the in-app browser keeps an old Flutter Web bundle alive.

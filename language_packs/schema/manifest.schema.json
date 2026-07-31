@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bhashavaani.local/contracts/language-pack-manifest.schema.json",
+  "title": "BhashaVaani Language Pack Manifest",
+  "type": "object",
+  "required": [
+    "language",
+    "support",
+    "explanation_languages",
+    "levels",
+    "curriculum",
+    "voice",
+    "status"
+  ],
+  "properties": {
+    "language": {
+      "type": "object",
+      "required": ["code", "name", "native_name", "writing_system", "direction"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z]{2,3}(-[a-z0-9]+)*$"
+        },
+        "name": {"type": "string", "minLength": 1},
+        "native_name": {"type": "string", "minLength": 1},
+        "writing_system": {"type": "string", "minLength": 1},
+        "direction": {"type": "string", "enum": ["ltr", "rtl"]}
+      }
+    },
+    "support": {
+      "type": "object",
+      "required": [
+        "transliteration",
+        "speech_to_text",
+        "text_to_speech",
+        "pronunciation_assessment"
+      ],
+      "properties": {
+        "transliteration": {"type": "boolean"},
+        "speech_to_text": {"type": "boolean"},
+        "text_to_speech": {"type": "boolean"},
+        "pronunciation_assessment": {
+          "type": "string",
+          "enum": ["none", "basic", "advanced", "later"]
+        }
+      }
+    },
+    "explanation_languages": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "levels": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "enum": [
+          "absolute_beginner",
+          "beginner",
+          "elementary",
+          "intermediate",
+          "advanced"
+        ]
+      }
+    },
+    "curriculum": {
+      "type": "object",
+      "required": ["entrypoint"],
+      "properties": {
+        "entrypoint": {"type": "string", "minLength": 1}
+      }
+    },
+    "voice": {
+      "type": "object",
+      "required": [
+        "preferred_stt_provider",
+        "preferred_tts_provider",
+        "fallback_provider"
+      ],
+      "properties": {
+        "preferred_stt_provider": {"type": "string", "minLength": 1},
+        "preferred_tts_provider": {"type": "string", "minLength": 1},
+        "fallback_provider": {"type": "string", "minLength": 1}
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": ["full", "beta", "preview", "text_only", "planned"]
+    }
+  }
+}

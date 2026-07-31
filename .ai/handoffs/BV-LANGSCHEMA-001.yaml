@@ -1,0 +1,36 @@
+task_id: BV-LANGSCHEMA-001
+status: completed
+
+summary:
+  Added a machine-readable Language Pack manifest contract and validator. Kannada now validates against the schema, invalid manifests produce actionable errors, and the validator emits backend-shaped language capability data.
+
+changed_files:
+  - language_packs/schema/manifest.schema.json
+  - tools/validate_language_packs.py
+  - apps/api/tests/test_language_pack_validation.py
+  - apps/api/tests/fixtures/language_packs/invalid_missing_code/manifest.yaml
+  - apps/api/tests/fixtures/language_packs/invalid_bad_status/manifest.yaml
+  - docs/contracts/language-pack-manifest.md
+  - README.md
+
+decisions:
+  - Use JSON Schema as the source contract.
+  - Keep the validator dependency-free for now because the available Python runtime does not have project dependencies installed.
+  - Emit backend-shaped capability data from manifests so the language registry can later derive its seed data from packs.
+
+tests:
+  passed:
+    - python tools/validate_language_packs.py
+    - python -m unittest discover -s tests
+    - flutter analyze
+    - flutter test
+    - flutter build web --dart-define=BHASHAVAANI_API_URL=http://127.0.0.1:6001 --dart-define=BHASHAVAANI_ENV=local
+  not_run: []
+
+remaining:
+  - Add Hindi starter pack.
+  - Wire backend language seed data directly from validated manifests.
+  - Expand curriculum file validation beyond manifest validation.
+
+warnings:
+  - The custom YAML parser intentionally supports only the simple manifest subset currently used by BhashaVaani.

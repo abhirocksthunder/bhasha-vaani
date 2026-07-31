@@ -1,0 +1,35 @@
+task_id: BV-HINDI-001
+status: completed
+
+summary:
+  Added Hindi as the second validated Language Pack. Hindi is marked preview with transliteration enabled, voice/STT/TTS disabled for now, and pronunciation assessment set to later. The backend language seed now upserts from validated manifests, so the running API serves Kannada full and Hindi preview after restart.
+
+changed_files:
+  - language_packs/hi/manifest.yaml
+  - apps/api/app/storage.py
+  - apps/api/tests/test_language_pack_validation.py
+  - apps/api/tests/test_storage.py
+  - docs/contracts/language-pack-manifest.md
+
+decisions:
+  - Hindi starts as `preview` until STT/TTS/provider quality is validated.
+  - Hindi voice providers are `none` initially, with fallback set to `local_or_configured_tts`.
+  - Backend SQLite language seed now upserts manifest-derived capability data to prevent stale statuses.
+
+tests:
+  passed:
+    - python tools/validate_language_packs.py
+    - python -m unittest discover -s tests
+    - flutter analyze
+    - flutter test
+    - flutter build web --dart-define=BHASHAVAANI_API_URL=http://127.0.0.1:6001 --dart-define=BHASHAVAANI_ENV=local
+    - manual GET /languages
+  not_run: []
+
+remaining:
+  - Derive `/languages` directly from validated manifests at runtime.
+  - Add Hindi curriculum starter files.
+  - Validate Hindi TTS/STT providers before promoting status.
+
+warnings:
+  - Hindi is intentionally preview and should not be presented as full voice support yet.

@@ -1,0 +1,43 @@
+task_id: BV-FASTAPI-PET-001
+status: completed
+
+summary:
+  Installed FastAPI/Uvicorn in apps/api/.api-venv, switched the live backend on port 6001 from the temporary dev server to FastAPI, and added a floating tutor pet in Flutter. The tutor pet opens a chat sheet with word/phrase input, language selector, and model route selector, then calls POST /assistant/word.
+
+changed_files:
+  - apps/api/pyproject.toml
+  - apps/api/README.md
+  - apps/api/app/main.py
+  - apps/api/app/word_assistant.py
+  - apps/api/dev_server.py
+  - apps/api/tests/test_word_assistant.py
+  - apps/api/tests/test_dev_server.py
+  - apps/mobile_flutter/lib/app/home_shell.dart
+  - apps/mobile_flutter/lib/app/bhasha_vaani_app.dart
+  - apps/mobile_flutter/lib/features/tutor_pet/presentation/tutor_pet_button.dart
+  - .gitignore
+
+decisions:
+  - Use FastAPI/Uvicorn as the live backend runtime on port 6001.
+  - Keep dev_server.py as a fallback path.
+  - Tutor pet starts with curated deterministic answers and a provider-ready fallback until local model provider integration is wired.
+  - Model choices exposed in UI are local_ollama, local_lmstudio, and frontier_later.
+
+tests:
+  passed:
+    - python -m unittest discover -s tests
+    - flutter analyze
+    - flutter test
+    - flutter build web --dart-define=BHASHAVAANI_API_URL=http://127.0.0.1:6001 --dart-define=BHASHAVAANI_ENV=local
+    - manual POST /assistant/word
+    - manual GET /health on FastAPI
+  not_run: []
+
+remaining:
+  - Connect tutor pet to actual local Ollama or LM Studio provider.
+  - Add provider availability checks.
+  - Add richer response schema for transliteration, examples, and pronunciation notes.
+
+warnings:
+  - apps/api/.api-venv is ignored and local to this machine.
+  - Tutor pet is not yet calling a real model.

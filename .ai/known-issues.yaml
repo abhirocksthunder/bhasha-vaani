@@ -1,0 +1,12 @@
+issues:
+  - id: BV-TOOLING-001
+    status: resolved
+    severity: medium
+    title: Flutter CLI hangs during version checks
+    details: Initial version checks timed out, but escalated Flutter commands completed. Tests, analysis, and web build passed on 2026-07-31.
+
+  - id: BV-DEPLOY-001
+    status: open
+    severity: medium
+    title: Remote Flutter Web needs authenticated backend access
+    details: Firebase-hosted frontend will need Firebase Auth, CORS, and a secure tunnel before it can safely call the local backend from anywhere.
