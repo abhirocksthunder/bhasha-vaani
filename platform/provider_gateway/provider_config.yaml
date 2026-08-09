@@ -4,7 +4,15 @@ providers:
   local_ollama:
     enabled: true
     base_url: http://localhost:11434
-    model: qwen3:30b
+    # Switched from qwen3:30b to gemma4:latest on 2026-08-02 -- qwen3:30b is
+    # a hybrid-reasoning ("thinking") model that was returning completely
+    # empty responses for lesson generation (see BV-LESSON-GEN-002 in
+    # .ai/known-issues.yaml); "think": false was added to
+    # apps/api/app/provider_gateway.py as a mitigation, but the user
+    # confirmed gemma4:latest generates successfully, so it's the default
+    # now. Change this back (or to another installed model) if
+    # gemma4:latest isn't available in a given environment.
+    model: gemma4:latest
 
   local_lmstudio:
     enabled: false

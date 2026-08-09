@@ -1,0 +1,103 @@
+id: BV-WEBPWA-PARITY-001
+date: 2026-08-02
+summary: >
+  Completed all remaining phases (2 through 7) of the Vite/React PWA
+  migration in one session, following on from BV-WEBPWA-001 (phase 1
+  scaffold, earlier the same day). apps/web_pwa now has full feature
+  parity with apps/mobile_flutter and is documented as the primary
+  BhashaVaani client.
+
+what_shipped:
+  - "Phase 2 (lesson session): src/features/lessons/{types,lessonRepository,ollamaRepository}.ts,
+    LessonCard.tsx, SessionPanel.tsx, LessonSessionScreen.tsx. Ports
+    learning_session_screen.dart including Next-auto-completes-before-advancing
+    behavior and the activity-list identity-vs-content comparison fix
+    (originally added to fix BV-NEXT-STUCK-001 in the Flutter app) --
+    applied here proactively via LessonSessionScreen's sameActivityIds
+    helper, so the Vite app never has the bug the Flutter app had to be
+    fixed for."
+  - "Voice: src/core/voice/{languageLocale,voiceService,speechRecognition.d}.ts.
+    Ports voice_service.dart from flutter_tts/speech_to_text to
+    speechSynthesis/SpeechRecognition. Same real-world caveat class as
+    before (voice availability is browser/OS-dependent; STT reliably only
+    works in Chromium-based browsers) -- not a regression, a different
+    package with the same limitation."
+  - "Phase 3 (progress): src/features/progress/{types,progressRepository,progressOutboxRepository}.ts,
+    ProgressScreen.tsx. The offline outbox uses localStorage instead of
+    IndexedDB (simpler, and this is just one JSON array behind one key --
+    same complexity class as Flutter's shared_preferences version, IndexedDB
+    would have been over-engineering for this)."
+  - "Phase 4 (tutor pet + roadmap): src/features/tutorPet/TutorPetButton.tsx,
+    src/features/roadmap/{types,RoadmapScreen}.tsx. Straight ports."
+  - "App.tsx rewritten to wire all five real screens (previously three real
+    + two ComingSoonScreen placeholders), with the full state-management
+    surface ported from bhasha_vaani_app.dart: loadInitialData,
+    refreshJourney, refreshLessonJourney, refreshProgress,
+    refreshLearnedWords, recordActivityCompleted, generateLessonPlan,
+    saveProfile, refreshQueuedCount, flushQueuedEvents."
+  - "Phase 5/6 (PWA): public/manifest.webmanifest, public/pwa-icon.svg
+    (hand-drawn SVG, not a raster image -- no image-generation tooling was
+    used or needed), public/sw.js (hand-written service worker,
+    stale-while-revalidate for static assets, network-first-with-cache-
+    fallback for navigation, deliberately never touches cross-origin API
+    calls), src/registerServiceWorker.ts (registered from main.tsx, PROD-
+    only guard so it never interferes with `vite dev`/HMR)."
+  - "Phase 7 (this phase): docs/decisions/ADR-004-vite-react-pwa-frontend.md
+    written, superseding ADR-001. CLAUDE.md updated in seven places: product
+    direction, current runtime (ports/launcher), repository map, important
+    docs list, architecture rules, implemented capabilities, validation
+    commands, development workflow (added step 8 for buildInfo.ts bumps),
+    near-term roadmap, important current status. apps/web_pwa/README.md and
+    buildInfo.ts (version 0.2.0) updated to reflect feature-complete status."
+
+deliberately_not_done:
+  - "apps/mobile_flutter was NOT deleted or archived. CLAUDE.md and ADR-004
+    both frame retiring it as a separate, explicit future decision (tracked
+    as BV-WEBPWA-RETIRE-001 in known-issues.yaml), not something to do
+    automatically right after reaching parity. Start BhashaVaani.cmd still
+    starts both frontends."
+  - "vite-plugin-pwa was NOT installed, in either phase 1 or this session.
+    The hand-written manifest+service-worker approach was chosen instead,
+    both to avoid the dependency-install fragility hit in phase 1 (see
+    BV-WEBPWA-001/ADR-004) and because it's genuinely sufficient for what
+    this app needs (installability + basic offline shell caching)."
+  - "Firebase Hosting deployment for apps/web_pwa was not set up -- ADR-001's
+    original Firebase plan applied to the Flutter build output and does not
+    carry over automatically. This is called out as a near-term roadmap item
+    in CLAUDE.md."
+
+verification_status: >
+  npx tsc -b --noEmit was clean after every phase in this session (strict
+  settings: noUnusedLocals, noUnusedParameters, erasableSyntaxOnly all on).
+  npx vite build successfully transformed all application modules (52-53,
+  growing as features were added) every time it was run, meaning every
+  import resolves and all TSX/TS syntax is valid -- but the build could
+  never fully complete in this sandbox: the final dist-folder unlink step
+  and, separately, the CSS minifier (lightningcss) hit environment-specific
+  failures (EPERM on file operations through this sandbox's D:\ mount, and
+  a missing Linux-only native binary) that are NOT expected to occur on the
+  user's actual Windows machine, which is a normal local filesystem with a
+  normal local npm install. This has NOT been confirmed by an actual
+  successful `npm run build` or by loading the running app in a real
+  browser and clicking through it. That's the most important next step
+  before treating this as fully done.
+
+next_steps:
+  - "Run `npm run dev` (already working per the user's own confirmation
+    earlier in this conversation, before this session's changes) and
+    `npm run build` on the real machine to confirm everything still works
+    with the new code. Click through all five tabs, and specifically try
+    Generate plan against a real running Ollama instance to see whether
+    local-model lesson generation actually succeeds now (this was already
+    a known-flaky area in the Flutter app, tracked as BV-LESSON-GEN-001,
+    and generating from local models was explicitly called out as part of
+    this session's request)."
+  - "If Generate plan still fails with local models, that's a backend/model
+    issue (apps/api/app/lesson_generator.py), not a frontend one -- both
+    frontends call the exact same endpoint. Don't re-debug it as a web_pwa
+    problem."
+  - "Decide when to retire apps/mobile_flutter (BV-WEBPWA-RETIRE-001)."
+  - "Consider running an actual `npm install` + `npm run build` in CI or
+    locally to catch anything the sandbox's tsc-only verification could
+    have missed (e.g. a runtime-only issue that only shows up in the
+    browser, like a Web Speech API browser-compat quirk)."

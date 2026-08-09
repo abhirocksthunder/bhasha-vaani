@@ -1,0 +1,31 @@
+id: BV-ADAPTIVELESSON-001
+date: 2026-07-31
+summary: Began adaptive lesson engine with language-pack starter curriculum, persistent lesson plans, and protected two-model generation.
+changed_paths:
+  - apps/api/app/lesson_catalog.py
+  - apps/api/app/lesson_generator.py
+  - apps/api/app/lesson_journey.py
+  - apps/api/app/storage.py
+  - apps/api/app/main.py
+  - apps/api/dev_server.py
+  - apps/api/tests/test_lesson_generator.py
+  - apps/api/tests/test_storage.py
+  - apps/api/tests/test_dev_server.py
+  - apps/mobile_flutter/lib/features/learning_session/domain/lesson_repository.dart
+  - apps/mobile_flutter/lib/features/learning_session/presentation/learning_session_screen.dart
+  - apps/mobile_flutter/lib/app/bhasha_vaani_app.dart
+  - language_packs/kn/curriculum/starter.json
+  - language_packs/hi/curriculum/starter.json
+  - docs/decisions/ADR-003-adaptive-lesson-generation.md
+validation:
+  - apps/api/.api-venv/Scripts/python.exe -m unittest discover -s tests
+  - apps/api/.api-venv/Scripts/python.exe tools/validate_language_packs.py
+  - flutter analyze --no-pub
+  - flutter test
+  - flutter build web --base-href /
+manual_checks:
+  - POST /lesson-journey returned 12 Kannada starter activities from language pack catalog
+  - POST /lesson-journey/generate safely rejected malformed or unreviewed local-model JSON
+warnings:
+  - Local Ollama models tested so far do not reliably return valid reviewed JSON for persisted lesson generation.
+  - The Generate plan button is wired, but malformed local model output will currently show an error/fallback rather than saving bad content.

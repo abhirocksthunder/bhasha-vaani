@@ -7,8 +7,9 @@ from pathlib import Path
 from typing import Any
 
 from app.language_registry import LanguageRegistry
+from app.lesson_generator import LessonGenerationError, generate_lesson_plan
 from app.lesson_journey import recommend_lesson_journey
-from app.provider_gateway import list_local_ollama_models
+from app.provider_gateway import ProviderGatewayError, list_local_ollama_models
 from app.progress_event import ProgressEventValidationError
 from app.storage import BhashaVaaniStore
 from app.word_assistant import explain_word
@@ -38,6 +39,7 @@ class BhashaVaaniDevHandler(BaseHTTPRequestHandler):
                         "/assistant/word",
                         "/providers/ollama/models",
                         "/lesson-journey",
+                        "/lesson-journey/generate",
                         "/profiles/{profile_id}/progress",
                     ],
                 },
@@ -100,9 +102,28 @@ class BhashaVaaniDevHandler(BaseHTTPRequestHandler):
         if self.path == "/lesson-journey":
             payload = self._read_json_body()
             profile_id = str(payload.get("profile_id", "profile_abhilash"))
+            language_code = str(payload.get("language_code", "kn"))
             self._send_json(
-                recommend_lesson_journey(payload, get_store().progress_summary(profile_id)),
+                recommend_lesson_journey(
+                    payload,
+                    get_store().progress_summary(profile_id),
+                    get_store().get_active_lesson_plan(
+                        profile_id=profile_id,
+                        language_code=language_code,
+                    ),
+                ),
             )
+            return
+
+        if self.path == "/lesson-journey/generate":
+            payload = self._read_json_body()
+            profile_id = str(payload.get("profile_id", "profile_abhilash"))
+            try:
+                plan = generate_lesson_plan(payload, get_store().progress_summary(profile_id))
+            except (LessonGenerationError, ProviderGatewayError) as error:
+                self._send_json({"accepted": False, "error": str(error)}, status=400)
+                return
+            self._send_json({"accepted": True, **get_store().save_lesson_plan(plan)})
             return
 
         self._send_json({"error": "not_found", "path": self.path}, status=404)

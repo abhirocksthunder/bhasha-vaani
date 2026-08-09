@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../core/config/build_info.dart';
+
 class HomeShell extends StatelessWidget {
   const HomeShell({
     required this.body,
@@ -135,9 +137,15 @@ class _TopBar extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'BhashaVaani',
-                  style: Theme.of(context).textTheme.titleMedium,
+                Row(
+                  children: [
+                    Text(
+                      'BhashaVaani',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(width: 8),
+                    const _BuildBadge(),
+                  ],
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -160,6 +168,37 @@ class _TopBar extends StatelessWidget {
             icon: Icon(Icons.sync, color: colorScheme.primary),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Small always-visible badge showing the running build's version and last
+/// update time, so after a code change + restart + hard refresh you can
+/// confirm the browser actually loaded the new build (rather than a stale
+/// cached one) instead of guessing from UI behavior alone.
+class _BuildBadge extends StatelessWidget {
+  const _BuildBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'BhashaVaani build ${BuildInfo.version}\n'
+          'Updated ${BuildInfo.updatedAt}\n'
+          '${BuildInfo.summary}',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F172A).withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          'v${BuildInfo.version}',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: const Color(0xFF64748B),
+                fontWeight: FontWeight.w700,
+              ),
+        ),
       ),
     );
   }
@@ -239,6 +278,11 @@ class _NavigationRail extends StatelessWidget {
             selectedIcon: Icon(Icons.bar_chart),
             label: Text('Progress'),
           ),
+          NavigationRailDestination(
+            icon: Icon(Icons.map_outlined),
+            selectedIcon: Icon(Icons.map),
+            label: Text('Roadmap'),
+          ),
         ],
       ),
     );
@@ -265,5 +309,10 @@ const _destinations = [
     icon: Icon(Icons.bar_chart_outlined),
     selectedIcon: Icon(Icons.bar_chart),
     label: 'Progress',
+  ),
+  NavigationDestination(
+    icon: Icon(Icons.map_outlined),
+    selectedIcon: Icon(Icons.map),
+    label: 'Roadmap',
   ),
 ];

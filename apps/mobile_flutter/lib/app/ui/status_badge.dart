@@ -52,12 +52,20 @@ class StatusBadge extends StatelessWidget {
             Icon(icon, size: 16, color: colors.foreground),
             const SizedBox(width: 6),
           ],
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: colors.foreground,
-                  fontWeight: FontWeight.w800,
-                ),
+          Flexible(
+            // Long messages (e.g. lesson-generation failure diagnostics)
+            // were getting visually clipped by the parent panel instead of
+            // wrapping, because Text had no width constraint inside a
+            // mainAxisSize.min Row. Flexible + softWrap lets long text wrap
+            // onto multiple lines instead of overflowing/clipping.
+            child: Text(
+              label,
+              softWrap: true,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: colors.foreground,
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
           ),
         ],
       ),

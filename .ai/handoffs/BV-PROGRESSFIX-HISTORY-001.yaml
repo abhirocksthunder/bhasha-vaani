@@ -1,0 +1,37 @@
+id: BV-PROGRESSFIX-HISTORY-001
+date: 2026-08-01
+summary: Diagnosed and fixed why lesson progress kept "resetting" to the same phrases, fixed a native_script persistence gap discovered along the way, added a learned-words history view, and made regeneration prefer new catalog phrases over already-completed ones.
+changed_paths:
+  - apps/mobile_flutter/lib/features/learning_session/presentation/learning_session_screen.dart
+  - apps/api/app/storage.py
+  - apps/api/app/lesson_catalog.py
+  - apps/api/app/main.py
+  - apps/api/app/lesson_generator.py
+  - apps/api/tests/test_storage.py
+  - apps/api/tests/test_lesson_generator.py
+  - apps/mobile_flutter/lib/features/progress/domain/learned_word.dart
+  - apps/mobile_flutter/lib/features/progress/domain/progress_repository.dart
+  - apps/mobile_flutter/lib/features/progress/presentation/progress_screen.dart
+  - apps/mobile_flutter/lib/app/bhasha_vaani_app.dart
+  - apps/mobile_flutter/lib/core/config/build_info.dart
+validation:
+  - python3 -m unittest discover -s tests (apps/api) -> 33 tests passing
+  - python3 tools/validate_language_packs.py -> valid: true
+decisions:
+  - "The user asked 'do I need to click Complete after completing 8 phrases?' -- investigated and the answer was yes, and that was the actual bug. Next/Back navigation in _SessionPanel never called onActivityCompleted; only the separate Complete button on the lesson card did. A user who just clicked through with Next recorded zero progress events, so completed_activities stayed 0 and the journey endpoint's next_index calculation restarted from the top of the same plan every time -- indistinguishable from 'getting the same phrases again' from the user's point of view."
+  - "Fix: _next() in learning_session_screen.dart is now async and calls _completeCurrent() first (if the current activity isn't already completed) before advancing the index. Kept the explicit Complete button too, for anyone who wants to mark-without-navigating."
+  - "While tracing this, found a second, independent bug: lesson_items (SQLite) had no native_script column, so save_lesson_plan silently dropped it and get_active_lesson_plan couldn't return it. This meant native_script was present in the direct /lesson-journey/generate response but vanished the moment _refreshProgress() -> _refreshLessonJourney() re-fetched the same plan from storage -- regressing last round's TTS pronunciation fix silently. Fixed with an ALTER TABLE migration (idempotent, checks PRAGMA table_info first) plus updated INSERT/SELECT statements."
+  - "New GET /profiles/{profile_id}/learned-words endpoint, per the user's explicit ask to see history of completed/learnt words. Resolves progress_events (activity_completed) to phrase/native_script/meaning two ways: a join through lesson_items+lesson_plans for generated-plan activities, and a per-language starter-catalog lookup (via a new list_catalog_language_codes() helper that scans language_packs/*/curriculum/starter.json rather than hardcoding language codes) for starter-catalog activities. Unresolvable/deleted activity ids are skipped rather than shown with blank text. Deduped to the most recent completion per activity id."
+  - "Also addressed the deeper cause of repeats: even with Complete working correctly, regenerating a plan had no signal about which catalog phrases were already covered, so it could legitimately draw an overlapping set from the same 12-item Kannada catalog. Added storage.get_completed_catalog_pairs() (reuses get_learned_words' resolution logic) and threaded it through generate_lesson_plan's new completed_pairs parameter into the tutor prompt, which now explicitly lists not-yet-learned phrases and instructs the model to prefer them, falling back to explicit review framing once the catalog is exhausted. This is a prompt hint, not a hard filter -- backend validation still only enforces catalog membership + completeness, matching the existing architecture split between 'AI decides content' and 'backend validates safety/schema'."
+manual_checks:
+  - traced the full _next() -> _completeCurrent() -> widget.onActivityCompleted -> progressRepository.uploadEvent chain
+  - traced native_script from generate_lesson_plan's return value through store.save_lesson_plan -> SQLite -> store.get_active_lesson_plan -> recommend_lesson_journey's dict spread -> Flutter's LessonActivity.fromJson
+  - wrote and ran 4 new backend tests covering: native_script round-trip (present and missing-falls-back-to-phrase cases), learned-words resolution across catalog + generated + unresolvable events, learned-words language filter + dedupe, and the tutor prompt containing the coverage instruction text and an uncompleted phrase
+warnings:
+  - flutter pub get/analyze/test/build web NOT run in this sandbox (no Flutter/Dart toolchain here). This round changed _next()'s signature (sync void -> async Future<void>) and added new ProgressScreen constructor parameters (with defaults, so should be backward compatible, but unverified) -- run flutter analyze before trusting this compiles.
+  - The "prefer new phrases" tutor instruction is advisory only; a model can still ignore it. And once a profile has completed all 12 Kannada catalog phrases, there is nothing new left to prefer -- new plans become pure review by design, not a residual bug. The user should be told this is expected once they've gone through the whole starter set, and that expanding the catalog (more curriculum content) is the real long-term fix, tracked in CLAUDE.md's near-term roadmap.
+  - dev_server.py (the lightweight standalone HTTP server, separate from the live FastAPI/uvicorn backend) was not updated with the new learned-words route or native_script awareness. It's mainly exercised by tests, not by Start BhashaVaani.cmd, so this was treated as an acceptable parity gap rather than fixed -- flag if that assumption turns out to be wrong.
+next_steps:
+  - Confirm in the running app: (1) clicking only Next through a lesson now correctly increments Completed in the Progress tab; (2) the Progress tab's new "Learned words" section populates and updates as activities complete; (3) a freshly generated plan after some phrases are already learned actually contains different phrases than before.
+  - Run flutter analyze/test/build web and fix anything the sandbox couldn't catch.
+  - Decide whether dev_server.py should get route parity or be retired now that uvicorn is the documented live backend.

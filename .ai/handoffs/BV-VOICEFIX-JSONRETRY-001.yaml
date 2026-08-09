@@ -1,0 +1,32 @@
+id: BV-VOICEFIX-JSONRETRY-001
+date: 2026-07-31
+summary: Started Stage 1.1 (harden two-model JSON generation) and fixed the lesson screen's mic/speaker buttons, which were wired to empty onPressed handlers and did nothing.
+changed_paths:
+  - apps/api/app/lesson_generator.py
+  - apps/api/app/provider_gateway.py
+  - apps/api/tests/test_lesson_generator.py
+  - apps/mobile_flutter/pubspec.yaml
+  - apps/mobile_flutter/lib/core/voice/voice_service.dart
+  - apps/mobile_flutter/lib/core/voice/language_locale.dart
+  - apps/mobile_flutter/lib/features/learning_session/presentation/learning_session_screen.dart
+  - apps/mobile_flutter/lib/features/roadmap/domain/roadmap_stage.dart
+  - docs/product/roadmap-learning-features.md
+validation:
+  - python3 -m unittest discover -s tests (run inside apps/api) -> 25 tests, all passing, including 2 new tests for the retry/repair loop
+manual_checks:
+  - read through the full modified learning_session_screen.dart for brace/comma correctness by hand (no flutter/dart toolchain available in this sandbox)
+  - confirmed the switch statement added in _toggleListening has explicit break on every case (required by Dart when case bodies are non-empty and not last)
+decisions:
+  - Root cause of "mic/speaker not working": both IconButtons had onPressed: () {} — literal no-ops, not a runtime bug. There was no audio/voice code anywhere in the app before this change.
+  - Root cause investigation for JSON reliability: found generate_with_ollama had a fixed num_predict=350 regardless of how many activities were requested (8-12), which plausibly truncates JSON mid-object for larger plans. Also found zero retry logic — one bad model reply failed the whole plan.
+  - Fix approach for lesson generation: (1) size num_predict to target_count, (2) retry each of the tutor/reviewer steps up to 3x, feeding the previous parse error back into the prompt as a correction request, (3) add a small JSON repair pass for trailing commas / truncated trailing objects, (4) attach per-attempt diagnostics to LessonGenerationError for backend logs.
+  - Fix approach for mic/speaker: added flutter_tts (speak) and speech_to_text (listen) as a temporary on-device solution — no backend changes, no provider-gateway involvement. This is explicitly NOT the Stage 3 "consistent per-profile voice" work; it's a stopgap so the buttons work today. Documented as such in the roadmap doc and roadmap tab so it isn't mistaken for Stage 3 completion.
+warnings:
+  - flutter pub get / flutter analyze / flutter test / flutter build web were NOT run — no Flutter/Dart toolchain in this sandbox. Must be run before merging; new pubspec.yaml dependencies (flutter_tts ^4.2.5, speech_to_text ^7.4.0) need pubspec.lock regenerated.
+  - Stage 1.1's acceptance criterion (5 consecutive real-Ollama generations, no manual retry) has NOT been validated against a real Ollama instance — only against fake providers in unit tests. Needs a manual run with `Start BhashaVaani.cmd` and a real local model.
+  - The project currently has no android/ or ios/ platform directories (web-only so far). flutter_tts/speech_to_text both support web out of the box, but when Android/iOS are scaffolded later, required permissions (RECORD_AUDIO, NSMicrophoneUsageDescription, NSSpeechRecognitionUsageDescription, etc.) will need to be added — tracked as a follow-up, not done here since there's no manifest/plist to edit yet.
+  - Kannada/Hindi voice/speech-recognition coverage in the browser is not guaranteed; VoiceService is written to degrade gracefully (fallback locale for TTS, "unavailable" SnackBar for STT) rather than throw.
+next_steps:
+  - Run `flutter pub get` then `flutter analyze` / `flutter test` / `flutter build web` to confirm the new dependencies resolve and the UI compiles.
+  - With the local backend and Ollama running, manually exercise "Generate plan" 5 times in a row to validate Stage 1.1's acceptance criterion; capture generation_diagnostics from failures if any remain.
+  - Continue Stage 1.2 (progress-aware activity selection) next, per docs/product/roadmap-learning-features.md.

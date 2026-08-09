@@ -1,0 +1,30 @@
+id: BV-WASMBUILD-WHITESCREEN-001
+date: 2026-07-31
+summary: Fixed the first-load white-screen bug and switched the frontend to a WebAssembly release build served statically, per user request.
+changed_paths:
+  - scripts/start-frontend.ps1
+  - scripts/wait-for-frontend.ps1
+  - Start BhashaVaani.cmd
+  - CLAUDE.md
+  - .ai/current-state.yaml
+  - .ai/known-issues.yaml
+  - .ai/change-log.yaml
+validation:
+  - manual review of the PowerShell/batch script changes for correctness
+  - could not actually run `flutter build web --wasm` in this sandbox (no Flutter SDK) -- this is the biggest open risk and must be checked on the real machine
+decisions:
+  - "Root cause of the white screen: Start BhashaVaani.cmd used to `timeout /t 8` then unconditionally open the browser, while the frontend ran `flutter run -d web-server` in debug mode, which compiles Dart to JS on the *first incoming request* rather than ahead of time. If the 8-second window wasn't enough (slow machine, cold cache, first run of the day), the browser opened before anything was ready, painted a blank page, and only a later hard refresh (after compilation had since finished in the background) showed the app."
+  - "Fix has two parts: (1) start-frontend.ps1 now does `flutter build web --wasm --base-href / --dart-define=...` first, producing a complete static build with no first-request compile step, then serves apps/mobile_flutter/build/web with `python -m http.server` on port 6002. (2) Start BhashaVaani.cmd no longer uses a fixed timer before opening the browser -- it runs the new scripts/wait-for-frontend.ps1, which polls http://127.0.0.1:6002 with Invoke-WebRequest every 2s (up to 240s) and only calls Start-Process once it gets a 200 response. This removes the race entirely rather than just widening the timing window."
+  - Chose Python's built-in http.server (reusing apps/api/.api-venv's python, falling back to a bare `python` on PATH) to serve the static build rather than adding a new Node/Dart static-server dependency, since Python is already a hard requirement for this repo's backend.
+  - "wasm was requested explicitly by the user for load-time reduction. flutter_bootstrap.js (already in apps/mobile_flutter/web/index.html, unchanged) auto-selects between the wasm and JS-fallback bundles that `flutter build web --wasm` produces, based on the browser's WasmGC support, so no index.html changes were needed."
+manual_checks:
+  - traced Start BhashaVaani.cmd's new flow: stop old ports -> start backend window -> start frontend window (build+serve) -> run wait-for-frontend.ps1 (blocks until ready or timeout) -> print URLs -> pause
+  - confirmed wait-for-frontend.ps1 has $ErrorActionPreference = "SilentlyContinue" specifically so Invoke-WebRequest failures during the "not ready yet" period don't kill the loop, only genuine timeout does
+warnings:
+  - "NOT verified end-to-end: `flutter build web --wasm` requires a Flutter SDK with WasmGC/dart2wasm support. If the user's installed Flutter SDK is older, this build command will fail outright -- they would need `flutter upgrade` first. There was no way to check the installed Flutter version from this sandbox (no Flutter SDK here at all)."
+  - The dev workflow fundamentally changed: there is no more live/debug frontend server. Every Dart code change now requires rerunning start-frontend.ps1 (a full release build), which is slower per-iteration than the old debug dev server's near-instant startup, though it removes the white-screen race and matches what CLAUDE.md already told future agents to do (restart + hard refresh) -- just now the restart step does more work.
+  - wait-for-frontend.ps1's 240-second timeout is a guess, not tuned against a real build on the user's actual hardware. If first builds take longer, either the timeout needs raising or the user will see "timed out, opening anyway" and need to refresh once themselves after the build finishes.
+next_steps:
+  - Run `Start BhashaVaani.cmd` for real and confirm (a) the wasm build succeeds without SDK errors, (b) the browser opens automatically once ready with no white screen, and (c) the app is noticeably faster to load than before.
+  - If `flutter build web --wasm` fails on the installed SDK, either upgrade Flutter or fall back to `flutter build web --base-href /` (JS-only) in start-frontend.ps1 until the SDK is upgraded.
+  - Tune wait-for-frontend.ps1's timeout based on real observed build time.

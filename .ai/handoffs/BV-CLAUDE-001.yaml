@@ -1,0 +1,11 @@
+id: BV-CLAUDE-001
+date: 2026-07-31
+summary: Added root CLAUDE.md as a comprehensive onboarding and continuity guide for Claude/coding agents.
+changed_paths:
+  - CLAUDE.md
+  - .ai/current-state.yaml
+  - .ai/change-log.yaml
+validation:
+  - Documentation-only change; code tests not required.
+notes:
+  - CLAUDE.md captures runtime ports, launcher usage, repository map, architecture rules, implemented capabilities, known issues, provider gateway notes, lesson system status, validation commands, and near-term roadmap.

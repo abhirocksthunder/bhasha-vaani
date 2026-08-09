@@ -10,7 +10,10 @@ from typing import Any
 
 
 DEFAULT_OLLAMA_URL = "http://127.0.0.1:11434"
-DEFAULT_OLLAMA_MODEL = "qwen3:30b"
+# Fallback used only if platform/provider_gateway/provider_config.yaml is
+# missing; the real default lives in that file (currently gemma4:latest,
+# see the comment there for why it replaced qwen3:30b).
+DEFAULT_OLLAMA_MODEL = "gemma4:latest"
 CONFIG_PATH = Path(__file__).resolve().parents[3] / "platform" / "provider_gateway" / "provider_config.yaml"
 
 
@@ -64,21 +67,34 @@ def generate_with_ollama(
     *,
     prompt: str,
     route: str | None = None,
+    json_mode: bool = False,
     timeout_seconds: int = 45,
+    temperature: float = 0.2,
+    num_predict: int = 350,
 ) -> dict[str, Any]:
     provider = resolve_provider_route(route)
-    body = json.dumps(
-        {
-            "model": provider.model,
-            "prompt": prompt,
-            "stream": False,
-            "options": {
-                "temperature": 0.2,
-                "num_ctx": 2048,
-                "num_predict": 350,
-            },
+    request_payload: dict[str, Any] = {
+        "model": provider.model,
+        "prompt": prompt,
+        "stream": False,
+        # Disable extended "thinking" for hybrid-reasoning models (Qwen3 and
+        # similar). Ollama versions that support this (0.9+) will spend the
+        # whole num_predict budget on <think>...</think> tokens by default
+        # for these models, which combined with format=json below has been
+        # observed to come back with an entirely empty "response" field --
+        # the model used its budget thinking and never emitted the actual
+        # JSON. Ollama versions that don't recognize "think" simply ignore
+        # it, so this is safe for non-reasoning models too.
+        "think": False,
+        "options": {
+            "temperature": temperature,
+            "num_ctx": 2048,
+            "num_predict": num_predict,
         },
-    ).encode("utf-8")
+    }
+    if json_mode:
+        request_payload["format"] = "json"
+    body = json.dumps(request_payload).encode("utf-8")
     request = urllib.request.Request(
         f"{provider.base_url}/api/generate",
         data=body,
@@ -100,7 +116,16 @@ def generate_with_ollama(
 
     answer = str(payload.get("response", "")).strip()
     if not answer:
-        raise ProviderGatewayError("Ollama returned an empty response.")
+        # Surface whatever Ollama did tell us (done_reason, eval counts,
+        # any "thinking" field some model builds populate separately from
+        # "response") instead of just "empty" -- this is the detail that
+        # was missing when this first got reported as a plain empty-
+        # response failure with no way to tell load/context/grammar issues
+        # apart from genuine model unavailability.
+        diagnostic_keys = ("done_reason", "eval_count", "prompt_eval_count", "thinking")
+        extra = {key: payload[key] for key in diagnostic_keys if key in payload}
+        detail = f" (details: {extra})" if extra else ""
+        raise ProviderGatewayError(f"Ollama returned an empty response.{detail}")
 
     return {
         "answer": answer,

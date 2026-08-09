@@ -1,0 +1,102 @@
+id: BV-WEBPWA-001
+date: 2026-08-02
+summary: >
+  Phase 1 of a planned migration from apps/mobile_flutter (Flutter Web) to
+  apps/web_pwa (Vite + React + TypeScript PWA). Decision made in chat: the
+  Flutter Web wasm build + no-hot-reload dev loop was judged unnecessary
+  overhead for this app's actual needs (a handful of tabbed screens, no
+  real need for Flutter's cross-platform native reach beyond web). Scope
+  was narrowed to web-only -- no Capacitor/TWA Android wrapper planned, so
+  the earlier "Android from the same codebase" rationale in ADR-001 is
+  explicitly dropped, not preserved by other means.
+
+migration_style: >
+  Side-by-side, not a rip-and-replace. apps/mobile_flutter keeps running
+  and being the real app until apps/web_pwa reaches feature parity across
+  all phases, then apps/mobile_flutter gets archived and start scripts get
+  repointed. Do not delete apps/mobile_flutter before that point.
+
+what_shipped_in_phase_1:
+  - apps/web_pwa/ scaffolded via `npm create vite@latest -- --template react-ts`.
+  - vite.config.ts pinned to host 127.0.0.1 port 6002 (same port
+    apps/mobile_flutter used) for both dev and preview servers.
+  - src/core/api/apiClient.ts -- ports apps/mobile_flutter/lib/core/api/api_client.dart
+    (fetch-based, same getList/getMap/postMap shape, ApiException class).
+  - src/core/config/appConfig.ts, buildInfo.ts -- port app_config.dart and
+    build_info.dart. Bump buildInfo.version/updatedAt/summary on every
+    future web_pwa change, same discipline as the Flutter badge.
+  - src/app/HomeShell.tsx -- ports home_shell.dart: nav rail >=900px width,
+    bottom tabs below that, top bar with build badge + connection pill.
+  - src/ui/{GlossyPanel,ScreenHeader,StatusBadge,StatePanels}.tsx -- port
+    the glassmorphism panel look (teal #0EA5A4 seed color, #F6F8FB
+    background) from bhasha_vaani_theme.dart / glossy_panel.dart /
+    screen_header.dart / status_badge.dart / state_panels.dart. StatusBadge
+    wraps long text instead of clipping it (a small improvement over the
+    Flutter version discussed earlier the same session, re-applied here
+    from the start).
+  - src/ui/icons.tsx -- minimal dependency-free inline-SVG icon set
+    standing in for Flutter's Material Icons. No icon library was added in
+    phase 1 (see "node_modules mount issues" below for why).
+  - src/features/profiles/* and src/features/languages/* -- full parity
+    ports of ProfileSelectionScreen (incl. edit modal) and
+    LanguageSelectionScreen, including offline seed-data fallback
+    (src/app/seedData.ts mirrors the seed profiles/languages in
+    bhasha_vaani_app.dart).
+  - src/app/ComingSoonScreen.tsx -- placeholder shown for the Lesson,
+    Progress, and Roadmap tabs, which are not ported yet.
+  - Verified: `npx tsc -b --noEmit` clean, `npx vite build` succeeds
+    (825ms, 214KB JS bundle), dev server boots on 127.0.0.1:6002 and
+    returns HTTP 200.
+
+known_gaps_going_into_phase_2:
+  - Lesson session screen (Next/Previous/Complete navigation, Play/Record
+    audio, Generate plan flow) is not ported. This is the most complex
+    remaining piece -- it needs to replicate learning_session_screen.dart
+    including the activity-list identity-vs-content comparison fix from
+    earlier this session (see BV-NEXT-STUCK-001) if a similar refetch
+    pattern is used.
+  - Audio: plan is Web Speech API (`speechSynthesis` for TTS,
+    `SpeechRecognition`/`webkitSpeechRecognition` for STT) as discussed in
+    chat -- same Chrome-only STT reliability caveat as
+    flutter_tts/speech_to_text has today, not a regression, just carried
+    forward.
+  - Progress dashboard, learned-words history, and the offline progress
+    outbox (IndexedDB, replacing shared_preferences) are not ported.
+  - Tutor pet floating button is not ported.
+  - No PWA manifest or service worker yet -- vite-plugin-pwa was
+    deliberately deferred to phase 6, not just unfinished. See below.
+  - node_modules for apps/web_pwa currently has some stray/orphaned
+    directories (e.g. node_modules/.ajv-*) left over from failed installs
+    during phase 1 scaffolding (see below) -- harmless (gitignored,
+    doesn't affect `npm run dev`/`build`) but a clean
+    `rm -rf node_modules && npm install` on a real Windows shell would tidy
+    it up before phase 2 work starts.
+
+node_modules_mount_issue: >
+  This session's tool ran in a Linux sandbox with D:\bhasha-vaani mounted
+  in (not native Windows). Installing vite-plugin-pwa (which pulls in a
+  large workbox/terser dependency tree) repeatedly failed with
+  EPERM/ENOTEMPTY errors during npm's temp-directory renames, and bulk
+  `rm -rf node_modules` also partially failed with "Operation not
+  permitted" on many files. This looks specific to that cross-OS mount,
+  not to the packages themselves or to Windows npm in general. Base
+  scaffold deps (react/vite/typescript, 36 packages) DID install
+  successfully before this was hit. Recommendation: do `npm install` calls
+  for apps/web_pwa from a normal Windows shell (PowerShell/cmd) directly on
+  the machine, not through a remote/sandboxed tool with a translated
+  mount -- this is now called out in apps/web_pwa/README.md.
+
+pending_governance: >
+  CLAUDE.md requires an ADR update when architecture changes. A new
+  ADR-004 superseding ADR-001 has NOT been written yet -- deliberately
+  deferred until the migration is further along (see known-issues
+  BV-WEBPWA-ADR-001) rather than written before any code existed, but
+  should land no later than phase 7 (cutover).
+
+next_step: >
+  Phase 2 -- port the lesson session screen. Start by re-reading
+  apps/mobile_flutter/lib/features/learning_session/{domain,presentation}/*
+  and apps/mobile_flutter/lib/core/voice/voice_service.dart, then build
+  src/features/learning-session/ following the same
+  types/repository/screen split used for profiles and languages in phase
+  1.

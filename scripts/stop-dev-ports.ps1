@@ -1,5 +1,8 @@
 param(
-    [int[]]$Ports = @(6001, 6002)
+    # 6001: backend, 6002: apps/mobile_flutter, 6003: apps/web_pwa (new
+    # Vite/React frontend, running side-by-side during the migration -- see
+    # .ai/handoffs/BV-WEBPWA-001.yaml).
+    [int[]]$Ports = @(6001, 6002, 6003)
 )
 
 $ErrorActionPreference = "SilentlyContinue"

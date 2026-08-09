@@ -5,6 +5,7 @@ import '../../../app/ui/glossy_panel.dart';
 import '../../../app/ui/screen_header.dart';
 import '../../../app/ui/state_panels.dart';
 import '../../../app/ui/status_badge.dart';
+import '../domain/learned_word.dart';
 import '../domain/progress_summary.dart';
 
 class ProgressScreen extends StatelessWidget {
@@ -13,6 +14,8 @@ class ProgressScreen extends StatelessWidget {
     required this.loadState,
     required this.queuedEventCount,
     required this.onRetry,
+    this.learnedWords = const [],
+    this.loadingLearnedWords = false,
     super.key,
   });
 
@@ -20,6 +23,8 @@ class ProgressScreen extends StatelessWidget {
   final AppLoadState loadState;
   final int queuedEventCount;
   final VoidCallback onRetry;
+  final List<LearnedWord> learnedWords;
+  final bool loadingLearnedWords;
 
   @override
   Widget build(BuildContext context) {
@@ -53,50 +58,153 @@ class ProgressScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
         ],
-        Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final crossAxisCount = constraints.maxWidth >= 820 ? 4 : 2;
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final crossAxisCount = constraints.maxWidth >= 820 ? 4 : 2;
 
-              return GridView.count(
-                crossAxisCount: crossAxisCount,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: constraints.maxWidth >= 820 ? 1.05 : 1.18,
-                children: [
-                  _ProgressTile(
-                    icon: Icons.school,
-                    title: 'Current lesson',
-                    value: summary.currentLesson,
-                    color: const Color(0xFF2563EB),
-                  ),
-                  _ProgressTile(
-                    icon: Icons.task_alt,
-                    title: 'Completed',
-                    value: summary.completedActivities.toString(),
-                    color: const Color(0xFF0F766E),
-                  ),
-                  _ProgressTile(
-                    icon: Icons.reviews,
-                    title: 'Reviews',
-                    value: summary.pendingReviews.toString(),
-                    color: const Color(0xFFB45309),
-                  ),
-                  _ProgressTile(
-                    icon: Icons.sync,
-                    title: 'Sync',
-                    value: queuedEventCount > 0
-                        ? '$queuedEventCount queued'
-                        : summary.syncState,
-                    color: const Color(0xFF7C3AED),
-                  ),
-                ],
-              );
-            },
+            return GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: crossAxisCount,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: constraints.maxWidth >= 820 ? 1.6 : 1.18,
+              children: [
+                _ProgressTile(
+                  icon: Icons.school,
+                  title: 'Current lesson',
+                  value: summary.currentLesson,
+                  color: const Color(0xFF2563EB),
+                ),
+                _ProgressTile(
+                  icon: Icons.task_alt,
+                  title: 'Completed',
+                  value: summary.completedActivities.toString(),
+                  color: const Color(0xFF0F766E),
+                ),
+                _ProgressTile(
+                  icon: Icons.reviews,
+                  title: 'Reviews',
+                  value: summary.pendingReviews.toString(),
+                  color: const Color(0xFFB45309),
+                ),
+                _ProgressTile(
+                  icon: Icons.sync,
+                  title: 'Sync',
+                  value: queuedEventCount > 0
+                      ? '$queuedEventCount queued'
+                      : summary.syncState,
+                  color: const Color(0xFF7C3AED),
+                ),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Learned words',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: _LearnedWordsList(
+            words: learnedWords,
+            loading: loadingLearnedWords,
           ),
         ),
       ],
     );
+  }
+}
+
+class _LearnedWordsList extends StatelessWidget {
+  const _LearnedWordsList({
+    required this.words,
+    required this.loading,
+  });
+
+  final List<LearnedWord> words;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading && words.isEmpty) {
+      return const LoadingPanel(
+        title: 'Loading history',
+        message: 'Fetching completed words from the backend.',
+      );
+    }
+
+    if (words.isEmpty) {
+      return const EmptyStatePanel(
+        icon: Icons.menu_book,
+        title: 'No words learned yet',
+        message: 'Complete an activity in the Lesson tab and it will show up here.',
+      );
+    }
+
+    return ListView.separated(
+      itemCount: words.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (context, index) => _LearnedWordTile(word: words[index]),
+    );
+  }
+}
+
+class _LearnedWordTile extends StatelessWidget {
+  const _LearnedWordTile({required this.word});
+
+  final LearnedWord word;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final completedAt = word.completedAtLocal;
+
+    return GlossyPanel(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  word.nativeScript,
+                  style: textTheme.titleMedium,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${word.phrase} · ${word.meaning}',
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.bodySmall?.copyWith(
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (completedAt != null)
+            Text(
+              _formatDate(completedAt),
+              style: textTheme.labelSmall?.copyWith(
+                color: const Color(0xFF94A3B8),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
+    if (isToday) {
+      final hour = date.hour.toString().padLeft(2, '0');
+      final minute = date.minute.toString().padLeft(2, '0');
+      return 'Today $hour:$minute';
+    }
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 }
 

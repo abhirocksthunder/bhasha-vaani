@@ -20,7 +20,7 @@ levels:
   - beginner
 
 curriculum:
-  entrypoint: curriculum/starter.yaml
+  entrypoint: curriculum/starter.json
 
 voice:
   preferred_stt_provider: none

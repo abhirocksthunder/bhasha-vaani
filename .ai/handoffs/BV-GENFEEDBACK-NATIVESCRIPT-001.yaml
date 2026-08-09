@@ -1,0 +1,34 @@
+id: BV-GENFEEDBACK-NATIVESCRIPT-001
+date: 2026-07-31
+summary: Fixed two user-reported bugs -- Generate plan always reverting to the same 12 phrases, and TTS reading Kannada/Hindi phrases with English pronunciation.
+changed_paths:
+  - apps/mobile_flutter/lib/features/learning_session/domain/lesson_repository.dart
+  - apps/mobile_flutter/lib/app/bhasha_vaani_app.dart
+  - apps/mobile_flutter/lib/features/learning_session/presentation/learning_session_screen.dart
+  - apps/mobile_flutter/lib/features/learning_session/domain/lesson_activity.dart
+  - apps/mobile_flutter/lib/core/voice/voice_service.dart
+  - apps/api/app/lesson_catalog.py
+  - apps/api/app/lesson_generator.py
+  - apps/api/tests/test_lesson_generator.py
+  - apps/api/tests/test_lesson_catalog.py
+  - language_packs/kn/curriculum/starter.json
+  - language_packs/hi/curriculum/starter.json
+validation:
+  - python3 -m unittest discover -s tests (apps/api) -> 29 tests passing
+  - python3 tools/validate_language_packs.py -> valid: true
+decisions:
+  - "Generate plan" bug: root cause was NOT the lesson generation logic itself failing (that's the separate, still-open BV-LESSON-GEN-001). It was that the Flutter client silently treated a backend rejection ({"accepted": false, "error": "..."}) as success, because it only checked for an "activities" key and never checked "accepted". Fixed by making generateJourneyActivities throw LessonGenerationException on accepted:false, and having the UI show that reason in an error-styled badge (new completionMessageIsError flag) instead of the green "Generated adaptive lesson plan" badge. This does NOT fix why generation itself was failing -- it makes that failure visible instead of hidden. The user needs to click Generate plan again with the local backend + Ollama running and read the new error text to diagnose the underlying cause (most likely: Ollama not running, no models installed, or the model still producing invalid JSON after the Stage 1.1 retry loop).
+  - TTS pronunciation bug: the starter catalogs only ever stored a romanized "phrase" field (e.g. "Namaskara"). flutter_tts was speaking that Latin-script text with whatever voice the browser fell back to (often a default English voice, since Kannada/Hindi TTS voices are not guaranteed installed), producing English-accented mispronunciation. Fixed by (1) adding a native_script field (e.g. ನಮಸ್ಕಾರ) to the Kannada and Hindi starter catalogs, sourced and validated so the model can never override it during generation (lesson_generator._validate_items looks it up from the trusted catalog by phrase+meaning pair), (2) LessonActivity.nativeScript falling back to phrase when a plan/activity doesn't have it, (3) the Play button now speaks nativeScript instead of phrase, and (4) VoiceService now distinguishes "spoke with a real matching-language voice" from "spoke with a fallback voice" and shows a SnackBar warning in the fallback case instead of pretending it worked correctly.
+manual_checks:
+  - traced the accepted:false path end-to-end from main.py's /lesson-journey/generate through lesson_repository.dart to bhasha_vaani_app.dart's catch blocks
+  - traced _validate_items to confirm native_script always comes from native_script_by_pair (catalog), never from the model's own output, with a unit test asserting a hallucinated "WRONG SCRIPT" value from a fake model gets overwritten
+warnings:
+  - flutter pub get / flutter analyze / flutter test / flutter build web were NOT run (no Flutter/Dart toolchain in this sandbox). Must run before trusting the UI compiles, especially given the LearningSessionScreen constructor signature changed (new completionMessageIsError param) and LessonActivity gained a new field.
+  - The actual root cause of repeated generation failures (why accepted was false every time) is still unknown -- this session only made the failure visible, it did not diagnose or fix the underlying Ollama/model issue. That requires running the app against a live Ollama instance, which isn't possible from this sandbox.
+  - Native script for the 18 total starter phrases (12 Kannada + 6 Hindi) was hand-transliterated by the assistant, not verified by a native speaker. Recommend a native-speaker review before treating it as authoritative, especially for TTS/pronunciation purposes.
+  - Any future language pack curriculum items that omit native_script will fall back to the romanized phrase (both in lesson_catalog.py and LessonActivity.fromJson), so nothing breaks, but pronunciation quality for those items will regress to the old behavior.
+next_steps:
+  - Run flutter pub get/analyze/test/build web on a machine with the Flutter SDK.
+  - With the backend + Ollama running locally, click "Generate plan" and report back what the new error badge says -- that will tell us whether it's a missing model, an unreachable Ollama, or something the Stage 1.1 retry loop still can't repair.
+  - Get native-speaker review of the Kannada/Hindi native_script transliterations.
+  - Consider extending native_script support to generated (non-catalog) activities and to Tamil/Malayalam/Punjabi once those packs get real curriculum.

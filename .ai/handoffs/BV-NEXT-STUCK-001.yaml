@@ -1,0 +1,62 @@
+id: BV-NEXT-STUCK-001
+date: 2026-08-02
+summary: >
+  Fixed the lesson screen's Next button appearing to do nothing except
+  refresh the page.
+
+root_cause: >
+  This was a regression from the earlier BV-NEXT-NOSAVE-001 fix, which made
+  _next() in learning_session_screen.dart auto-complete the current activity
+  via widget.onActivityCompleted before advancing. That callback
+  (_recordActivityCompleted in bhasha_vaani_app.dart) saves the progress
+  event and then refreshes the lesson journey from the backend twice
+  (_refreshProgress -> _refreshLessonJourney, then an explicit
+  _refreshLessonJourney call). Each refresh decodes a brand-new
+  List<LessonActivity> from the API response, even when the activities
+  themselves are identical to before. didUpdateWidget compared
+  oldWidget.activities != widget.activities by List reference identity
+  (Dart's default == for List), so every refresh looked like "the lesson
+  changed" and reset activityIndex to 0 and cleared completedActivityIds --
+  right after _next() had just incremented activityIndex. Net effect: the
+  learner got bounced back toward the start on every tap and appeared stuck,
+  with a visible rebuild that read as "just a page refresh".
+
+fix: >
+  learning_session_screen.dart didUpdateWidget now calls a new
+  _sameActivityIds helper that compares the two activity lists by id content
+  (same length, same ids in order) rather than by list-instance identity.
+  Position and completion state are only reset when the underlying set of
+  activities has actually changed (e.g. a real new generated plan or catalog
+  swap); a same-content refetch now leaves activityIndex and
+  completedActivityIds untouched, so the increment from _next() sticks and
+  the learner actually advances.
+
+changed_paths:
+  - apps/mobile_flutter/lib/features/learning_session/presentation/learning_session_screen.dart
+  - apps/mobile_flutter/lib/core/config/build_info.dart (version bump to 0.6.1 per CLAUDE.md workflow)
+  - .ai/current-state.yaml
+  - .ai/change-log.yaml
+  - .ai/known-issues.yaml
+
+validation_status: >
+  Not run in this session -- the sandbox this was fixed in does not have the
+  Flutter SDK installed, only the mounted repo files. Before treating this as
+  fully verified, run in a real Flutter environment:
+    cd apps/mobile_flutter
+    flutter analyze --no-pub
+    flutter test
+    flutter build web --wasm --base-href /
+  Then rerun `Start BhashaVaani.cmd`, hard-refresh, confirm the v0.6.1 badge
+  shows, and manually click Next repeatedly through a lesson to confirm the
+  activity index advances through all activities instead of sticking near
+  the start.
+
+follow_ups:
+  - Consider whether LessonActivity should implement value equality (==,
+    hashCode) so future List comparisons elsewhere in the app don't hit the
+    same reference-identity trap.
+  - The double _refreshLessonJourney() call per completion
+    (_refreshProgress's internal call plus the explicit one right after) is
+    redundant network traffic; not fixed here since it wasn't causing a
+    correctness bug beyond what this fix already addresses, but worth
+    trimming to one call.

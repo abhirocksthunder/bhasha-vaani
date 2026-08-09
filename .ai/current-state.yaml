@@ -1,5 +1,5 @@
 version: 0.1.0
-updated_at: 2026-07-31T16:30:00+05:30
+updated_at: 2026-08-02T02:30:00+05:30
 
 milestone:
   name: flutter_first_foundation
@@ -10,6 +10,7 @@ implemented:
     - initial architecture documentation
     - AI-readable project memory
     - Flutter-first app skeleton
+    - CLAUDE.md project onboarding guide for coding agents
   backend:
     - FastAPI placeholder with health and languages endpoints
     - provider gateway contract and config
@@ -19,9 +20,26 @@ implemented:
     - backend storage and route tests
     - typed progress event envelope with required-field validation
     - runtime language registry reads validated manifests directly
+    - uvicorn now runs with --reload (start-backend.ps1 and README.md) so backend Python changes apply automatically without a manual restart
+    - scripts/start-frontend.ps1 now runs `flutter build web --wasm` and serves build/web as static files instead of the debug `flutter run -d web-server` dev server, fixing a first-load white-screen race
+    - scripts/wait-for-frontend.ps1 added; Start BhashaVaani.cmd polls it instead of opening the browser on a fixed timer
     - progress event schema version guard rejects unsupported versions
     - FastAPI/Uvicorn runtime installed and running on port 6001
     - word assistant endpoint for tutor pet
+    - Ollama local model listing endpoint for tutor pet
+    - lesson plan persistence tables for adaptive lessons
+    - protected two-model lesson generation endpoint
+    - backend rejects malformed generated lesson output before persistence
+    - lesson generation uses a target-count-scaled token budget and a 3-attempt retry/repair loop with per-attempt diagnostics (Stage 1.1, needs live-Ollama validation)
+    - lesson catalog and generated plans carry a trusted native_script field (sourced from the catalog, never the model) alongside the romanized phrase
+    - /lesson-journey/generate rejection reasons ({"accepted": false, "error": ...}) are now surfaced to the Flutter client instead of being silently swallowed
+    - lesson_items table gained a native_script column (with startup migration for existing DBs) so generated plans keep their native-script text across a save/reload round trip, not just in the immediate generation response
+    - new GET /profiles/{profile_id}/learned-words endpoint resolves activity_completed progress events to phrase/native_script/meaning via lesson_items+lesson_plans join and starter-catalog fallback, newest first, deduped, optional language_code filter
+    - lesson generation now looks up the profile's already-completed catalog phrases (store.get_completed_catalog_pairs) and instructs the tutor model to prefer not-yet-learned phrases, falling back to review once the catalog is exhausted (Stage 1.2 partial)
+    - generated plans now deterministically top up with not-yet-completed catalog items when the tutor/reviewer models keep re-picking already-learned phrases (apps/api/app/lesson_generator.py _ensure_new_phrase_coverage), fixing newly-approved Catalog-tab phrases not showing up in generated plans
+    - Stage 1.3 "teach me X" launcher: apps/api/app/lesson_request.py parses free-form request text ("5 new words today", "review what we did") into target_count/mode hints; generate_lesson_plan honors an optional request_text field (explicit payload fields still win) and returns a request_interpretation object describing how it was understood
+    - get_learned_words now groups by (language, phrase, meaning) instead of raw activity_id and returns a times_completed count per word, fixing the same catalog phrase showing as separate "duplicate" history rows once a learner regenerated a plan and relearned it (a regenerated plan gives the same catalog phrase a new activity_id each time)
+    - progress_summary(profile_id, language_code=None) now scopes completed_activities to one language and dedupes via get_learned_words instead of a raw cross-language COUNT(DISTINCT entity_id); fixes BV-PROGRESS-SCOPE-001 where an inflated global count corrupted lesson_journey's per-language next_index/state calc (a language's catalog could show zero "next" activities once the wrong count exceeded its size). /lesson-journey, /lesson-journey/generate, and GET /profiles/{id}/progress (new ?language_code= param) all scope by language now.
   mobile:
     - Flutter Web and Android-ready app shell
     - glossy mobile-first profile selection screen
@@ -37,27 +55,70 @@ implemented:
     - profile edit bottom sheet for current learner settings
     - Kannada starter lesson expanded from 2 to 6 activities
     - floating tutor pet for asking words by language and model route
+    - tutor pet can show installed Ollama local model tags
+    - one-click Windows launcher starts backend and frontend
+    - lesson screen includes Generate plan action
+    - Roadmap tab showing staged plan for adaptive lessons, scenario studio, and personalized voice tutor
+    - lesson screen Play phrase and Record answer buttons wired to on-device flutter_tts/speech_to_text (temporary, pre-Stage-3 stopgap; previously no-ops)
+    - Play phrase speaks native-script text and warns when only a fallback (non-target-language) voice was found, instead of silently mispronouncing
+    - Generate plan shows the backend's real rejection reason (error-styled) instead of a false "Generated adaptive lesson plan" success message when generation fails
+    - lesson screen now has an Ollama model dropdown (reusing the tutor pet's model list) so the user can pick which installed model generates the plan instead of always using the provider gateway's auto-selected default
+    - top bar shows a build version badge (apps/mobile_flutter/lib/core/config/build_info.dart) with tooltip of update time + summary, bumped on every Flutter code change so a hard refresh can be visually confirmed
+    - lesson screen Next button now auto-completes the current activity if not already marked complete, before advancing (previously Next alone never saved progress, so paging through a lesson without pressing the separate Complete button made it look like the same phrases repeated)
+    - Progress tab now shows a "Learned words" history list (native script, romanized phrase, meaning, completion time) fetched from the new learned-words endpoint
+    - Fixed Next button appearing to do nothing (BV-NEXT-STUCK-001): learning_session_screen.dart now compares refetched activity lists by id content instead of list-instance reference, so a backend refresh no longer resets activityIndex/completedActivityIds on every Next tap
+    - roadmap_stage.dart statuses updated to match docs/product/roadmap-learning-features.md (Stage 1.1 and 1.3 now completed); this app benefits from the shared backend's learned-words dedup/count fix automatically but was not given its own "xN" badge or "Learn more" CTA UI (those are web_pwa-only, per ADR-004's "new frontend work goes to web_pwa" policy)
   language_packs:
     - Kannada starter manifest
+    - Kannada starter curriculum expanded to 12 catalog activities
+    - Kannada starter curriculum items now include native_script (Kannada script) alongside romanized phrase
     - Hindi starter manifest
+    - Hindi starter curriculum catalog
+    - Hindi starter curriculum items now include native_script (Devanagari) alongside romanized phrase
     - JSON Schema manifest contract
     - dependency-free language pack validator
     - tests for valid and invalid manifests
 
+  web_pwa:
+    - apps/web_pwa (Vite + React + TypeScript) is now the PRIMARY BhashaVaani client, per docs/decisions/ADR-004-vite-react-pwa-frontend.md (supersedes ADR-001). Migration to it was completed across phases 1-7 on 2026-08-02, all in one session, side-by-side with apps/mobile_flutter (which was NOT deleted -- see BV-WEBPWA-RETIRE-001 in known-issues.yaml).
+    - Full feature parity with the (now legacy) Flutter app: profiles (list/select/edit), languages, guided lesson screen (Next/Previous/Complete with the same activity-list identity-vs-content fix as Flutter's BV-NEXT-STUCK-001, applied proactively; Play/Record via the browser Web Speech API; Generate plan with an Ollama model picker calling the same /lesson-journey/generate endpoint), progress dashboard + learned-words history, localStorage-based offline progress outbox (parity with Flutter's shared_preferences outbox), floating tutor pet, roadmap tab, build-version badge.
+    - Installability: hand-written public/manifest.webmanifest + public/sw.js (deliberately not vite-plugin-pwa/Workbox -- that dependency tree failed to install through this sandbox's D:\ mount during phase 1; see BV-WEBPWA-PARITY-001 in change-log.yaml and ADR-004). Service worker only registers in production builds, not `vite dev`.
+    - Dev server on 127.0.0.1:6003 (not 6002, which is apps/mobile_flutter's port -- see BV-WEBPWA-PORT-001). Start BhashaVaani.cmd now launches backend + both frontends (scripts/start-web-pwa.ps1 added for this). Backend CORS (apps/api/app/main.py) allows both 6002 and 6003.
+    - Lesson screen now has a "Teach me... (optional)" free-form request box (Stage 1.3) next to Generate plan; shows the backend's resolved interpretation (mode + activity count) in the completion banner after generating.
+    - Progress tab's learned-words list now shows a "xN" badge for phrases learned more than once instead of the same phrase appearing as separate duplicate rows after regenerating and relearning it.
+    - Lesson screen's Next button, once the last activity in the current plan is completed, is replaced by a "Learn more words" action that triggers Generate plan directly, instead of leaving the learner at a dead-end disabled button.
+    - Verified this session: `npx tsc -b --noEmit` clean throughout (strict noUnusedLocals/noUnusedParameters/erasableSyntaxOnly). `vite build` transformed all 52-56 modules successfully every time; final steps (dist unlink, CSS minifier native binary) failed for reasons specific to this sandbox's mount, not the code -- not yet re-verified with a real `npm run build` on the user's own machine.
+    - Backend (apps/api) untouched by this entire migration; both frontends call the same FastAPI backend on 127.0.0.1:6001.
+
 decisions:
-  - flutter_first_firebase_web
+  - flutter_first_firebase_web  # SUPERSEDED by vite_react_pwa_frontend below (ADR-004), 2026-08-02
+  - vite_react_pwa_frontend
   - local_backend_provider_gateway
+  - adaptive_lesson_generation_with_reviewed_local_models
 
 next_priorities:
-  - connect provider gateway to local Ollama or LM Studio for tutor pet answers
-  - add Hindi starter curriculum
+  - apps/web_pwa - run `npm run dev` (or `npm run build`) on the user's actual Windows machine to verify the full app (all phases) works end to end; this session only verified via `tsc -b` and `vite build`'s module-transform step, since the sandbox's D:\ mount blocked the final unlink/minify steps for environment reasons unrelated to the code (see BV-WEBPWA-PARITY-001)
+  - apps/web_pwa - manually confirm `Generate plan` actually produces a lesson from a local Ollama model end-to-end in the new frontend (same underlying reliability question as Stage 1.1 below, now needs checking through both frontends)
+  - decide when to retire apps/mobile_flutter now that apps/web_pwa has full parity -- see BV-WEBPWA-RETIRE-001, deliberately left as an open decision rather than auto-deleting the Flutter app
+  - apps/web_pwa - consider adding vite-plugin-pwa later for richer PWA features (precache manifests, update-prompt UX) if the hand-written public/sw.js turns out to be insufficient; its dependency tree failed to install through this sandbox's D:\ mount during phase 1 (see ADR-004), a normal local `npm install` on Windows should not have the same problem
+  - Stage 1.1 - validate the new lesson-generation retry/repair loop against a real running Ollama instance (5 consecutive generations, no manual retry); this will also reveal the real reason Generate plan was rejecting every attempt for the user
+  - backfill native_script for any future catalog items and consider requiring it in language pack validation
+  - verify `flutter build web --wasm` succeeds on the user's installed Flutter SDK version (requires WasmGC/dart2wasm support); if it errors, the SDK likely needs an upgrade
+  - verify the wasm build actually loads correctly in the user's browser (flutter_bootstrap.js should auto-fallback to JS on unsupported browsers, but this has not been manually confirmed)
+  - once a profile has completed all 12 Kannada catalog phrases, generated plans fall back to pure review since the catalog is intentionally small right now -- expanding curriculum size is the real fix (see near-term roadmap in CLAUDE.md)
+  - Stage 1.3 "teach me X" launcher shipped 2026-08-02 -- needs live-Ollama validation on the user's machine (parsing/routing is unit-tested, but end-to-end model behavior with request_text hasn't been confirmed for real)
+  - Stage 1.2/1.4 remaining: add a per-item mastery/strength score to activity_completed events (no score signal exists yet, so "weak items first" isn't implemented, only "not-yet-completed first"), and a session recap screen referencing prior sessions
+  - Stage 2 - build two-bot scenario conversation studio (scenario contract, multi-voice TTS, playback/transcript UI)
+  - Stage 3 - build personalized voice tutor (STT for comfortable language, consistent per-profile TTS voice, bilingual turn-taking)
+  - add structured generation repair and model-specific provider settings
   - add stronger native mobile offline database later
   - run frontend on port 6002 and backend on port 6001 during local development
   - avoid frontend port 6000 because Chromium blocks it as unsafe
 
 known_risks:
-  - Firebase remote frontend requires secure backend tunnel and auth
+  - Firebase remote frontend requires secure backend tunnel and auth (now applies to apps/web_pwa, the primary client per ADR-004, not apps/mobile_flutter)
   - local PC backend availability depends on machine uptime and network
-  - Flutter Web is suitable for anywhere access but native Android remains the priority for audio and offline depth
-  - runnable local API is still the standard-library dev server because FastAPI is not installed in the available Python runtime
+  - no native Android app exists or is currently planned from either frontend (ADR-004 deliberately dropped that goal when apps/web_pwa was chosen); a native app would be a new decision if wanted later
+  - apps/web_pwa's speech-to-text (Web Speech API) is reliably supported only in Chromium-based browsers, same class of limitation as Flutter's speech_to_text had, not a regression
   - queued offline events are durable locally, but retry controls are still basic
+  - local Ollama models tested so far can produce malformed or empty JSON for lesson generation

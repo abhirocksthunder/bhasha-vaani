@@ -18,7 +18,7 @@ When Flutter Web is deployed to Firebase Hosting, expose the backend through a s
 For local development, run the FastAPI backend:
 
 ```text
-.api-venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 6001
+.api-venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 6001 --reload --reload-dir app
 ```
 
 If dependencies are unavailable, the SQLite-backed standard-library dev server can still be used:

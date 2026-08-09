@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/ui/glossy_panel.dart';
 import '../../../app/ui/status_badge.dart';
 import '../../../core/api/api_client.dart';
+import '../../../core/api/ollama_model.dart';
 import '../../language_selection/domain/language_pack.dart';
 import '../../profiles/domain/learner_profile.dart';
 
@@ -335,34 +336,5 @@ class _TutorPetSheetState extends State<_TutorPetSheet> {
         setState(() => loadingModels = false);
       }
     }
-  }
-}
-
-class OllamaModel {
-  const OllamaModel({
-    required this.name,
-    required this.parameterSize,
-    required this.family,
-  });
-
-  final String name;
-  final String parameterSize;
-  final String family;
-
-  String get label {
-    final parts = [
-      name,
-      if (parameterSize.isNotEmpty) parameterSize,
-      if (family.isNotEmpty) family,
-    ];
-    return parts.join(' - ');
-  }
-
-  factory OllamaModel.fromJson(Map<String, dynamic> json) {
-    return OllamaModel(
-      name: json['name'] as String? ?? '',
-      parameterSize: json['parameter_size'] as String? ?? '',
-      family: json['family'] as String? ?? '',
-    );
   }
 }

@@ -1,0 +1,80 @@
+# Project Hub manifest (plan doc Section 8.4).
+# Project type is a judgment call -- the audit (docs/bhasha-vaani-audit-
+# report.md in D:\project-hub) found this repo doesn't cleanly match any
+# single one of the four frozen v1 project types. Closest fit is
+# mobile-ui, loosely -- Vistrike's specific "glass design system" rules
+# don't transfer (this app has its own distinct "glossy mobile-first"
+# visual language, never cross-checked against Vistrike's). Revisit if a
+# fifth "content-versioned, offline-sync, family learning app" type gets
+# added per the audit's recommendation.
+
+schemaVersion: 1
+
+project:
+  id: bhasha-vaani
+  componentId: bhasha-vaani-app
+  name: "Bhasha Vaani"
+  type: mobile-ui
+  status: active
+
+documentation:
+  sourceDirectories:
+    - docs
+    - .ai
+  include:
+    - "**/*.md"
+  exclude:
+    - "**/node_modules/**"
+    - "**/.api-venv/**"
+    - "**/.dart_tool/**"
+    - "**/build/**"
+    - "**/*.yaml" # .ai/ is mostly YAML (project-map, current-state, change-log, handoffs) -- structured machine state, not prose docs; sync only the .md files under docs/ for now
+
+status:
+  provider: unset # no status adapter built yet
+  command: null
+  schemaVersion: 1
+
+capabilities:
+  - documentation-sync
+
+remoteActions:
+  enabled: false
+  allowlist: []
+
+sensitiveData:
+  sourceCode:
+    policy: exclude
+  datasets:
+    policy: exclude # language_packs/ curriculum content is product content, not a training dataset -- still kept local for now, not synced
+  modelWeights:
+    policy: exclude # no model weights in this repo; Ollama models are external
+  secrets:
+    policy: never-sync
+    patterns:
+      - "**/.env"
+      - "**/.env.local"
+      - "**/*.pem"
+  personalData:
+    policy: redact-before-publish
+    # Real finding from the audit: apps/api/data/bhasha_vaani.db (gitignored,
+    # not tracked) contains seed profile data including the name "Abhilash"
+    # -- correctly excluded from documentation-sync since it's a data
+    # directory, not a docs source, but noted here explicitly.
+
+# Findings from the Bhasha Vaani audit (docs/bhasha-vaani-audit-report.md,
+# this session's Project Hub repo, D:\project-hub) that this manifest does
+# NOT attempt to resolve -- see that report's §8 for the full list:
+#   - URGENT: nearly all working functionality (adaptive lesson generation,
+#     tutor pet, provider gateway, voice stopgap, roadmap tab, CLAUDE.md
+#     itself) exists only as UNCOMMITTED working-tree changes on top of a
+#     single initial commit. A git reset --hard or a lost working
+#     directory would currently erase essentially the entire feature set.
+#     This is a real data-loss risk, not a documentation nit -- recommend
+#     committing in logical chunks (the 20 .ai/handoffs/*.yaml entries are
+#     a ready-made commit-message narrative) before treating this repo as
+#     a stable Project Hub data source.
+#   - platform/provider_gateway/provider_contract.py describes a
+#     multi-provider LLMProvider abstraction that was never adopted --
+#     zero imports anywhere. Needs a decision: delete, or keep as a
+#     forward-looking contract for when a second provider is added.

@@ -94,7 +94,9 @@ class DevServerRouteTest(unittest.TestCase):
             "device_id": "route_test",
             "session_id": "session_route",
             "event_type": "activity_completed",
-            "entity_id": "kn_a1_lesson_01_activity_01",
+            # Must resolve to a real starter-catalog activity -- see the note
+            # in test_storage.py's idempotency test for why.
+            "entity_id": "kn_a1_starter_01",
             "occurred_at": "2026-07-31T18:15:00+05:30",
             "recorded_at": "2026-07-31T18:15:01+05:30",
             "client_sequence": 1,
@@ -115,6 +117,40 @@ class DevServerRouteTest(unittest.TestCase):
         self.assertEqual(response["completed_activities"], 1)
         self.assertEqual(response["activities"][0]["state"], "completed")
         self.assertEqual(response["activities"][1]["state"], "next")
+
+    def test_lesson_journey_route_prefers_active_plan(self) -> None:
+        self.store.save_lesson_plan(
+            {
+                "plan_id": "plan_route_generated",
+                "profile_id": "profile_abhilash",
+                "language_code": "kn",
+                "source": "local_two_model_generation",
+                "tutor_model": "ornith:9b",
+                "reviewer_model": "deepseek-r1:14b",
+                "reviewer_notes": "ok",
+                "activities": [
+                    {
+                        "id": "generated_activity_01",
+                        "title": "Generated",
+                        "prompt": "Practise a generated phrase.",
+                        "phrase": "Sari",
+                        "meaning": "Okay",
+                    },
+                ],
+            },
+        )
+
+        response = self._post_json(
+            "/lesson-journey",
+            {
+                "profile_id": "profile_abhilash",
+                "language_code": "kn",
+            },
+        )
+
+        self.assertEqual(response["source"], "local_two_model_generation")
+        self.assertEqual(response["plan_id"], "plan_route_generated")
+        self.assertEqual(response["activities"][0]["id"], "generated_activity_01")
 
     def _get_json(self, path: str) -> object:
         with urllib.request.urlopen(f"{self.base_url}{path}") as response:

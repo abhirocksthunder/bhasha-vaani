@@ -1,4 +1,292 @@
 changes:
+  - date: 2026-08-02
+    id: BV-PROGRESS-SCOPE-001
+    summary: "Fixed the Progress tab's \"Completed\" count being cross-language and duplicate-inflated (reported: \"only Hindi shown, no Kannada phrases, completed shows 53\"). storage.progress_summary() now takes an optional language_code and reuses get_learned_words's phrase-level dedup instead of a raw COUNT(DISTINCT entity_id) across all languages. That inflated global count was feeding lesson_journey.recommend_lesson_journey()'s next_index/state calc, so once it exceeded a language's own catalog size, every activity in that language showed as already \"completed\" with nothing left. /lesson-journey, /lesson-journey/generate, and GET /profiles/{id}/progress (new ?language_code= query param) all now scope by the request's language; both frontends' progress repositories updated to pass it."
+    changed_paths:
+      - apps/api/app/storage.py
+      - apps/api/app/main.py
+      - apps/api/tests/test_storage.py
+      - apps/api/tests/test_dev_server.py
+      - apps/web_pwa/src/features/progress/progressRepository.ts
+      - apps/mobile_flutter/lib/features/progress/domain/progress_repository.dart
+      - .ai/known-issues.yaml
+    validation:
+      - "python -m unittest discover -s tests (47 passed)"
+      - "npx tsc -b --noEmit (clean)"
+
+  - date: 2026-08-02
+    id: BV-LEARNEDWORDS-DEDUP-001
+    summary: "Fixed learned-words history showing the same phrase as separate \"duplicate\" rows after a learner regenerated a plan and relearned it (a regenerated plan gives the same catalog phrase a new activity_id each time). storage.get_learned_words now groups by (language, phrase, meaning) and returns a times_completed count instead of grouping by raw activity_id. apps/web_pwa's Progress tab shows a \"xN\" badge when times_completed > 1. Also replaced the dead-end disabled Next button at the end of a plan with a \"Learn more words\" action that triggers Generate plan directly. Roadmap statuses (docs/product/roadmap-learning-features.md, both frontends' roadmap tabs) updated to reflect Stage 1.1 and 1.3 as completed and Stage 1.2's improved (but still partial) status."
+    changed_paths:
+      - apps/api/app/storage.py
+      - apps/api/tests/test_storage.py
+      - apps/web_pwa/src/features/progress/types.ts
+      - apps/web_pwa/src/features/progress/ProgressScreen.tsx
+      - apps/web_pwa/src/features/lessons/SessionPanel.tsx
+      - apps/web_pwa/src/features/lessons/LessonSessionScreen.tsx
+      - apps/web_pwa/src/features/roadmap/types.ts
+      - apps/web_pwa/src/core/config/buildInfo.ts
+      - apps/mobile_flutter/lib/features/roadmap/domain/roadmap_stage.dart
+      - apps/mobile_flutter/lib/core/config/build_info.dart
+      - docs/product/roadmap-learning-features.md
+      - .ai/current-state.yaml
+    validation:
+      - "python -m unittest discover -s tests (46 passed)"
+      - "npx tsc -b --noEmit (clean)"
+      - "npx vite build (transform step clean; final dist-write fails only on this sandbox's cross-OS mount, same known issue as every prior build this session)"
+
+  - date: 2026-08-02
+    id: BV-TEACHME-001
+    summary: "Shipped Stage 1.3 (docs/product/roadmap-learning-features.md): a free-form \"teach me X\" lesson launcher. New apps/api/app/lesson_request.py parses request text into target_count/mode hints; generate_lesson_plan honors an optional request_text field (explicit payload fields win) and returns request_interpretation. apps/web_pwa's lesson screen gained a \"Teach me... (optional)\" text box next to Generate plan, showing the resolved interpretation in the completion banner."
+    changed_paths:
+      - apps/api/app/lesson_request.py
+      - apps/api/app/lesson_generator.py
+      - apps/api/tests/test_lesson_request.py
+      - apps/api/tests/test_lesson_generator.py
+      - apps/web_pwa/src/features/lessons/types.ts
+      - apps/web_pwa/src/features/lessons/lessonRepository.ts
+      - apps/web_pwa/src/features/lessons/LessonSessionScreen.tsx
+      - apps/web_pwa/src/features/lessons/SessionPanel.tsx
+      - apps/web_pwa/src/core/config/buildInfo.ts
+      - docs/product/roadmap-learning-features.md
+      - .ai/current-state.yaml
+    validation:
+      - "python -m unittest discover -s tests (45 passed)"
+      - "npx tsc -b --noEmit (clean)"
+      - "npx vite build (56 modules transformed; final dist-write step fails only on this sandbox's cross-OS mount, same known issue as every prior build this session)"
+
+  - date: 2026-08-02
+    id: BV-CATALOG-GEN-003
+    summary: Fixed newly-approved Catalog-tab phrases not appearing in generated plans. The tutor/reviewer models only got a soft "prefer not-yet-learned phrases" hint and kept re-picking familiar catalog items even after the catalog grew (Kannada 12->22, Hindi ~4->16). Added a deterministic backend top-up step (_ensure_new_phrase_coverage) that fills in not-yet-completed catalog items the model didn't select, so catalog growth reliably shows up in plans instead of depending on model behavior.
+    changed_paths:
+      - apps/api/app/lesson_generator.py
+      - apps/api/tests/test_lesson_generator.py
+      - apps/api/tests/test_lesson_catalog.py
+      - .ai/known-issues.yaml
+    validation:
+      - "python -m unittest discover -s tests (34 passed)"
+
+  - date: 2026-08-01
+    id: BV-PROGRESSFIX-HISTORY-001
+    summary: Fixed Next not saving progress (root cause of "same phrases again"), fixed native_script being lost on plan reload, added a learned-words history list to the Progress tab, and made lesson regeneration prefer not-yet-learned catalog phrases over already-completed ones.
+    changed_paths:
+      - apps/mobile_flutter/lib/features/learning_session/presentation/learning_session_screen.dart
+      - apps/api/app/storage.py
+      - apps/api/app/lesson_catalog.py
+      - apps/api/app/main.py
+      - apps/api/app/lesson_generator.py
+      - apps/api/tests/test_storage.py
+      - apps/api/tests/test_lesson_generator.py
+      - apps/mobile_flutter/lib/features/progress/domain/learned_word.dart
+      - apps/mobile_flutter/lib/features/progress/domain/progress_repository.dart
+      - apps/mobile_flutter/lib/features/progress/presentation/progress_screen.dart
+      - apps/mobile_flutter/lib/app/bhasha_vaani_app.dart
+      - apps/mobile_flutter/lib/core/config/build_info.dart
+      - .ai/current-state.yaml
+      - .ai/change-log.yaml
+    validation:
+      - python3 -m unittest discover -s tests (apps/api) -> 33 tests passing (added native_script round-trip tests, learned-words resolution/filter/dedupe tests, and a tutor-prompt coverage-instruction test)
+      - python3 tools/validate_language_packs.py -> valid: true
+      - flutter/dart toolchain unavailable in this sandbox; flutter analyze/test/build still required
+    manual_checks:
+      - "root-caused the user's "8 phrases, then same phrases again" report to two separate things: (1) the Next button never called onActivityCompleted, so completed_activities stayed 0 server-side no matter how far a user paged through a lesson with Next/Back; (2) even when Complete was clicked, regenerating a plan had no signal about which catalog phrases were already covered, so it could legitimately reproduce an overlapping set from the same 12-item Kannada catalog"
+      - traced native_script's journey end-to-end: was present in the direct /lesson-journey/generate response (already fixed last round) but silently dropped by the very next _refreshProgress() -> _refreshLessonJourney() call because lesson_items had no column to store it in -- fixed with an ALTER TABLE migration plus updated INSERT/SELECT
+      - traced get_learned_words' dual resolution path (lesson_items+lesson_plans join for generated activities, per-language starter catalog lookup for catalog activities) against three event types in a new test: catalog completion, generated-plan completion, and an unresolvable/deleted activity id (correctly skipped, not shown blank)
+    warnings:
+      - flutter pub get/analyze/test/build web NOT run in this sandbox. This round changed a StatefulWidget's internal navigation method (_next is now async) and added new required-with-defaults constructor params to ProgressScreen -- verify compilation before relying on this.
+      - The "prefer not-yet-learned phrases" instruction is a prompt hint, not a hard filter -- the model can still ignore it. Backend validation still only enforces catalog membership + completeness, not novelty, consistent with the existing "AI decides content, backend validates safety/schema" split.
+      - Once all 12 Kannada catalog phrases are marked completed, new plans necessarily become pure review (there is nothing new left to prefer). This is expected given the current catalog size, not a bug -- documented in current-state.yaml's next_priorities.
+      - dev_server.py (the lightweight standalone dev server) was NOT updated with a matching /profiles/{id}/learned-words route or native_script column awareness. It's a secondary path exercised mainly by tests, not the live FastAPI backend Start BhashaVaani.cmd runs -- flagging as a known parity gap rather than fixing now.
+    next_steps:
+      - Verify in the running app that clicking Next without pressing Complete now correctly increments completed_activities and that a full 8-item generated plan doesn't "reset" on revisit.
+      - Verify the Progress tab's Learned words list populates and updates as activities are completed.
+      - Consider whether dev_server.py needs the learned-words route for parity, or whether it should be retired now that uvicorn is the documented live backend.
+
+  - date: 2026-08-01
+    id: BV-MODELDROPDOWN-001
+    summary: Added an Ollama model dropdown to the lesson screen so the user can pick which installed model generates the lesson plan (tutor + reviewer both use it) instead of always relying on the provider gateway's auto-selected default.
+    changed_paths:
+      - apps/mobile_flutter/lib/core/api/ollama_model.dart
+      - apps/mobile_flutter/lib/features/tutor_pet/presentation/tutor_pet_button.dart
+      - apps/mobile_flutter/lib/features/learning_session/domain/lesson_repository.dart
+      - apps/mobile_flutter/lib/features/learning_session/presentation/learning_session_screen.dart
+      - apps/mobile_flutter/lib/app/bhasha_vaani_app.dart
+      - apps/mobile_flutter/lib/core/config/build_info.dart
+      - .ai/current-state.yaml
+      - .ai/change-log.yaml
+    validation:
+      - python3 -m unittest discover -s tests (apps/api, no backend changes needed for this feature) -> 29 tests passing
+      - flutter/dart toolchain unavailable in this sandbox; flutter analyze/test/build required before merging
+    manual_checks:
+      - extracted the previously-duplicated OllamaModel class (was only in tutor_pet_button.dart) into core/api/ollama_model.dart and confirmed tutor_pet_button.dart still compiles logically against the shared import
+      - traced the new data flow: LearningSessionScreen fetches GET /providers/ollama/models on initState -> dropdown selection stored in selectedOllamaModel -> passed to widget.onGenerateLessonPlan(selectedOllamaModel) -> bhasha_vaani_app.dart's _generateLessonPlan(ollamaModel) -> lessonRepository.generateJourneyActivities(ollamaModel: ollamaModel) -> both tutor_model and reviewer_model sent as "ollama:<model>" instead of the hardcoded "local_ollama"
+      - confirmed LearningSessionScreen's apiBaseUrl (String, previously unused in the widget body) was replaced with apiClient (ApiClient instance) rather than kept alongside it, since nothing else in the file referenced apiBaseUrl
+    warnings:
+      - flutter pub get/analyze/test/build web still not run in this sandbox -- LearningSessionScreen's constructor signature changed (apiBaseUrl removed, apiClient added; onGenerateLessonPlan now takes a String? parameter), so this needs real compilation to confirm.
+      - If Ollama is not running or has zero models installed, the dropdown shows an empty list with a "No installed models found" helper message rather than blocking Generate plan; clicking Generate plan with no model selected falls back to the gateway's default ("local_ollama" route), same as before this change.
+    next_steps:
+      - Compile/run on the real machine and confirm the dropdown populates with installed models and that picking a specific model actually changes tutor_model/reviewer_model in the generated plan response.
+
+  - date: 2026-07-31
+    id: BV-WASMBUILD-WHITESCREEN-001
+    summary: Fixed first-load white-screen issue and switched to a WebAssembly release build for the Flutter frontend. Root cause was Start BhashaVaani.cmd opening the browser on a fixed 8s timer while the debug `flutter run -d web-server` dev server was still compiling; a hard refresh later (after compilation caught up) then worked. Replaced the debug dev server with `flutter build web --wasm` served as static files, and replaced the fixed timer with a polling wait script that only opens the browser once the server actually responds.
+    changed_paths:
+      - scripts/start-frontend.ps1
+      - scripts/wait-for-frontend.ps1
+      - Start BhashaVaani.cmd
+      - CLAUDE.md
+      - .ai/current-state.yaml
+      - .ai/known-issues.yaml
+      - .ai/change-log.yaml
+    validation:
+      - manual read-through of the new PowerShell scripts and the updated .cmd file for syntax correctness
+      - could NOT run `flutter build web --wasm` in this sandbox (no Flutter SDK available) -- must be verified on the user's machine
+    warnings:
+      - "`flutter build web --wasm` requires a Flutter SDK version with WasmGC/dart2wasm support. If the build step in scripts/start-frontend.ps1 fails, the SDK likely needs an upgrade (`flutter upgrade`)."
+      - The frontend workflow changed from a live dev server to build-then-serve. Every Flutter/Dart code change now requires a full `flutter build web --wasm` (slower than the old dev server's near-instant first response, though it removes the white-screen race). This is already reflected in CLAUDE.md's Local Dev Refresh Workflow section.
+      - wait-for-frontend.ps1 has a 240s timeout; on a very slow first build it may open the browser too early (with a "still building" console message) or the user may need to just wait and refresh once more. Not yet tuned against a real build on the user's machine.
+      - scripts/start-frontend.ps1 falls back to a bare `python` on PATH if the apps/api virtual environment python is not found; if neither is available, serving will fail (build itself does not depend on Python, only the static-file-serving step does).
+    next_steps:
+      - Run `Start BhashaVaani.cmd` on the real machine and confirm both the wasm build succeeds and the page loads correctly on first try (no white screen, no manual hard refresh needed).
+      - If the build is consistently slow, consider caching/incremental strategies or reverting to a debug dev server with a proper loading indicator instead, as a fallback.
+
+  - date: 2026-07-31
+    id: BV-DEVREFRESH-BUILDBADGE-001
+    summary: Added uvicorn --reload to the backend so Python changes apply without a manual restart, and added a build/version badge to the Flutter top bar (bumped on every Flutter change) so a hard refresh's effect is visible instead of guessed at.
+    changed_paths:
+      - scripts/start-backend.ps1
+      - apps/api/README.md
+      - apps/mobile_flutter/lib/core/config/build_info.dart
+      - apps/mobile_flutter/lib/app/home_shell.dart
+      - CLAUDE.md
+      - .ai/current-state.yaml
+      - .ai/change-log.yaml
+    validation:
+      - manual read-through of home_shell.dart changes for brace/import correctness (no flutter/dart toolchain in this sandbox)
+      - confirmed watchfiles.exe is already present in apps/api/.api-venv/Scripts, which uvicorn --reload depends on
+    manual_checks:
+      - traced _TopBar's new Row(title, _BuildBadge) and confirmed _BuildBadge is a small self-contained StatelessWidget reading BuildInfo constants
+    warnings:
+      - flutter pub get/analyze/test/build web still not run in this sandbox; verify on the real machine.
+      - --reload-dir app on the backend only watches apps/api/app -- if a future change needs dev_server.py (a separate lightweight script, not used by start-backend.ps1) to hot-reload too, that flag will need broadening.
+      - Frontend still requires a full flutter run restart (rerun Start BhashaVaani.cmd) after Dart changes; there is no background auto-rebuild for the web-server target the way there is for the backend now. This is documented in CLAUDE.md's new "Local Dev Refresh Workflow" section.
+    next_steps:
+      - Going forward, bump build_info.dart's version/updatedAt/summary on every Flutter change (now documented as a required step in CLAUDE.md's completion checklist).
+
+  - date: 2026-07-31
+    id: BV-GENFEEDBACK-NATIVESCRIPT-001
+    summary: Fixed Generate plan silently reverting to the same 12 starter phrases with a false success message (backend rejections were never surfaced to the client), and fixed text-to-speech reading Kannada/Hindi phrases with English pronunciation by speaking trusted native-script text and warning honestly when no matching-language voice is installed.
+    changed_paths:
+      - apps/mobile_flutter/lib/features/learning_session/domain/lesson_repository.dart
+      - apps/mobile_flutter/lib/app/bhasha_vaani_app.dart
+      - apps/mobile_flutter/lib/features/learning_session/presentation/learning_session_screen.dart
+      - apps/mobile_flutter/lib/features/learning_session/domain/lesson_activity.dart
+      - apps/mobile_flutter/lib/core/voice/voice_service.dart
+      - apps/api/app/lesson_catalog.py
+      - apps/api/app/lesson_generator.py
+      - apps/api/tests/test_lesson_generator.py
+      - apps/api/tests/test_lesson_catalog.py
+      - language_packs/kn/curriculum/starter.json
+      - language_packs/hi/curriculum/starter.json
+      - .ai/current-state.yaml
+      - .ai/known-issues.yaml
+      - .ai/change-log.yaml
+    validation:
+      - python3 -m unittest discover -s tests (run inside apps/api) -> 29 tests, all passing (4 new: 3 lesson_catalog, 1 native_script provenance)
+      - python3 tools/validate_language_packs.py -> valid: true
+      - flutter/dart toolchain unavailable in this sandbox; flutter pub get, flutter analyze, flutter test, and flutter build web still required before merging
+    manual_checks:
+      - traced generateJourneyActivities: on {"accepted": false, ...} it now throws LessonGenerationException instead of silently returning an empty activities list
+      - traced _generateLessonPlan in bhasha_vaani_app.dart: on LessonGenerationException, activities/loadState are left untouched and completionMessageIsError=true drives an error-styled badge instead of the green success badge
+      - confirmed _validate_items in lesson_generator.py sources native_script from the catalog lookup (native_script_by_pair), not from model output, so a hallucinated script value is always overwritten
+    warnings:
+      - The real reason "Generate plan" was failing (most likely BV-LESSON-GEN-001: Ollama not running, no models installed, or JSON still invalid after 3 retries) is now visible to the user via the error badge, but has not been diagnosed/fixed itself in this session -- no way to run Ollama from this sandbox.
+      - Native script was only backfilled for the 12 Kannada + 6 Hindi starter catalog items (hand-transliterated, not reviewed by a native speaker). lesson_catalog.get_starter_activities() falls back to the romanized phrase for any future catalog item missing native_script.
+      - flutter pub get/analyze/test/build web still need to run on a machine with the Flutter SDK.
+    next_steps:
+      - With the local backend + Ollama running, click Generate plan and read the new error badge text to diagnose the actual generation failure reason.
+      - Have a Kannada/Hindi speaker review the hand-added native_script transliterations in language_packs/kn and language_packs/hi starter.json.
+
+  - date: 2026-07-31
+    id: BV-VOICEFIX-JSONRETRY-001
+    summary: Hardened two-model lesson JSON generation with a target-count-scaled token budget and a 3-attempt retry/repair loop (Stage 1.1), and wired the previously no-op lesson screen Play phrase / Record answer buttons to real on-device text-to-speech and speech-to-text.
+    changed_paths:
+      - apps/api/app/lesson_generator.py
+      - apps/api/app/provider_gateway.py
+      - apps/api/tests/test_lesson_generator.py
+      - apps/mobile_flutter/pubspec.yaml
+      - apps/mobile_flutter/lib/core/voice/voice_service.dart
+      - apps/mobile_flutter/lib/core/voice/language_locale.dart
+      - apps/mobile_flutter/lib/features/learning_session/presentation/learning_session_screen.dart
+      - apps/mobile_flutter/lib/features/roadmap/domain/roadmap_stage.dart
+      - docs/product/roadmap-learning-features.md
+      - .ai/current-state.yaml
+      - .ai/change-log.yaml
+    validation:
+      - python3 -m unittest discover -s apps/api/tests (25 tests, all passing, run from repo root equivalent)
+      - flutter/dart toolchain unavailable in this sandbox; flutter pub get, flutter analyze, flutter test, and a live Ollama generation run are still required before this is considered fully verified
+    manual_checks:
+      - traced _LessonCard state machine (speaking/listening/recognizedText) and confirmed didUpdateWidget resets voice state when the activity changes
+      - confirmed switch statement in _toggleListening has explicit break on every non-last case (Dart requires this)
+    warnings:
+      - Stage 1.1 acceptance criterion (5 consecutive real-Ollama generations with no manual retry) is NOT yet verified — only unit-tested against fake providers.
+      - flutter_tts/speech_to_text were added as web-only-verified dependencies (project currently has no android/ or ios/ platform folders scaffolded). When native platforms are added, Android needs RECORD_AUDIO/INTERNET/BLUETOOTH permissions and iOS needs NSMicrophoneUsageDescription/NSSpeechRecognitionUsageDescription — not yet added anywhere since those platform folders don't exist.
+      - Kannada/Hindi browser voice coverage for both TTS and STT is not guaranteed; VoiceService degrades gracefully (falls back to default locale / shows an unavailable message) rather than crashing.
+
+  - date: 2026-07-31
+    id: BV-ROADMAP-001
+    summary: Wrote staged implementation plan for history-aware adaptive lessons, two-bot scenario conversation studio, and personalized voice tutor, and added a Roadmap tab to the Flutter app tracking each stage's status.
+    changed_paths:
+      - docs/product/roadmap-learning-features.md
+      - apps/mobile_flutter/lib/features/roadmap/domain/roadmap_stage.dart
+      - apps/mobile_flutter/lib/features/roadmap/presentation/roadmap_screen.dart
+      - apps/mobile_flutter/lib/app/home_shell.dart
+      - apps/mobile_flutter/lib/app/bhasha_vaani_app.dart
+      - .ai/current-state.yaml
+      - .ai/change-log.yaml
+    validation:
+      - manual review of switch-index wiring in bhasha_vaani_app.dart (flutter/dart toolchain unavailable in this sandbox; flutter analyze/test still required before merge)
+
+  - date: 2026-07-31
+    id: BV-CLAUDE-001
+    summary: Added CLAUDE.md with full project understanding, architecture rules, runtime instructions, status, validation commands, and roadmap for future coding agents.
+    changed_paths:
+      - CLAUDE.md
+      - .ai/current-state.yaml
+      - .ai/change-log.yaml
+      - .ai/handoffs/BV-CLAUDE-001.yaml
+    validation:
+      - Documentation-only change; no code tests required.
+
+  - date: 2026-07-31
+    id: BV-ADAPTIVELESSON-001
+    summary: Began adaptive lesson engine with language-pack starter catalogs, SQLite lesson plan persistence, protected two-model generation endpoint, and Flutter Generate plan action.
+    changed_paths:
+      - apps/api/app/lesson_catalog.py
+      - apps/api/app/lesson_generator.py
+      - apps/api/app/lesson_journey.py
+      - apps/api/app/storage.py
+      - apps/api/app/main.py
+      - apps/api/dev_server.py
+      - apps/api/tests/test_lesson_generator.py
+      - apps/api/tests/test_storage.py
+      - apps/api/tests/test_dev_server.py
+      - apps/mobile_flutter/lib/features/learning_session/domain/lesson_repository.dart
+      - apps/mobile_flutter/lib/features/learning_session/presentation/learning_session_screen.dart
+      - apps/mobile_flutter/lib/app/bhasha_vaani_app.dart
+      - language_packs/kn/curriculum/starter.json
+      - language_packs/hi/curriculum/starter.json
+      - docs/decisions/ADR-003-adaptive-lesson-generation.md
+      - .ai/current-state.yaml
+      - .ai/known-issues.yaml
+      - .ai/handoffs/BV-ADAPTIVELESSON-001.yaml
+    validation:
+      - apps/api/.api-venv/Scripts/python.exe -m unittest discover -s tests
+      - apps/api/.api-venv/Scripts/python.exe tools/validate_language_packs.py
+      - flutter analyze --no-pub
+      - flutter test
+      - flutter build web --base-href /
+
   - date: 2026-07-31
     id: BV-FASTAPI-PET-001
     summary: Switched live backend to FastAPI/Uvicorn and added floating tutor pet word assistant with language/model selectors.
@@ -235,6 +523,110 @@ changes:
     changed_paths:
       - apps/api/README.md
       - .ai/current-state.yaml
+
+  - date: 2026-08-02
+    id: BV-CATALOG-GEN-002
+    summary: Added human-in-the-loop catalog builder, superseding straight-to-disk CLI generation as the primary way to grow a language pack's starter catalog. Backend gained apps/api/app/catalog_generator.py (generate_candidate_phrases writes nothing; approve_catalog_phrases writes only what's passed in) and two endpoints, POST /catalog/{language}/generate-candidates and POST /catalog/{language}/approve. Frontend gained a Catalog tab (apps/web_pwa/src/features/catalog/) to generate, inline-edit, check/uncheck, and submit approved candidates. tools/generate_catalog_phrases.py refactored to reuse the same shared module instead of duplicating the generation logic.
+    changed_paths:
+      - apps/api/app/catalog_generator.py
+      - apps/api/app/main.py
+      - tools/generate_catalog_phrases.py
+      - apps/web_pwa/src/features/catalog/
+      - apps/web_pwa/src/app/HomeShell.tsx
+      - apps/web_pwa/src/App.tsx
+      - apps/web_pwa/src/core/config/buildInfo.ts
+      - .ai/known-issues.yaml
+    validation:
+      - "python3 -m unittest discover -s tests (33 tests, all pass)"
+      - "python3 -c 'import app.main' (clean)"
+      - "npx tsc -b --noEmit (clean)"
+      - "npx vite build (56 modules transformed cleanly; sandbox-only unlink failure at cleanup step, unrelated to code)"
+
+  - date: 2026-08-02
+    id: BV-CATALOG-GEN-001
+    summary: Added tools/generate_catalog_phrases.py to generate new starter-curriculum phrases via a local Ollama model and append them to a language pack's starter.json, after the user reported Generate plan couldn't produce genuinely new phrases (catalog-size limit, not a bug -- see BV-REPEAT-CATALOG-001). Also switched the default Ollama model in provider_config.yaml from qwen3:30b to gemma4:latest (confirmed working by the user; qwen3:30b was hitting BV-LESSON-GEN-002's empty-response issue).
+    changed_paths:
+      - tools/generate_catalog_phrases.py
+      - platform/provider_gateway/provider_config.yaml
+      - apps/api/app/provider_gateway.py
+      - .ai/known-issues.yaml
+
+  - date: 2026-08-02
+    id: BV-LESSON-GEN-002
+    summary: "Generate plan was failing with \"Ollama returned an empty response\" on all 3 tutor attempts. Likely cause: provider_config.yaml's default model (qwen3:30b, a hybrid-reasoning model) burning its token budget on <think> tokens instead of the requested JSON when format=json is set. Added \"think\": false to the Ollama request payload and richer diagnostics on empty responses. Not yet verified against a live Ollama instance."
+    changed_paths:
+      - apps/api/app/provider_gateway.py
+      - .ai/known-issues.yaml
+
+  - date: 2026-08-02
+    id: BV-WEBPWA-PARITY-001
+    summary: "Phases 2-7 of the Vite/React PWA migration: lesson session screen (Next/Previous/Complete, Play/Record via Web Speech API, Generate plan w/ Ollama model picker), progress dashboard + learned-words history + localStorage offline outbox, tutor pet, roadmap tab, hand-written PWA manifest/service worker, and cutover docs (ADR-004 superseding ADR-001, CLAUDE.md updated throughout). apps/web_pwa now has full feature parity with apps/mobile_flutter and is the primary client per CLAUDE.md; apps/mobile_flutter kept running, not deleted (see BV-WEBPWA-RETIRE-001)."
+    changed_paths:
+      - apps/web_pwa/src/features/lessons/
+      - apps/web_pwa/src/features/progress/
+      - apps/web_pwa/src/features/roadmap/
+      - apps/web_pwa/src/features/tutorPet/
+      - apps/web_pwa/src/core/voice/
+      - apps/web_pwa/src/App.tsx
+      - apps/web_pwa/src/main.tsx
+      - apps/web_pwa/src/registerServiceWorker.ts
+      - apps/web_pwa/public/manifest.webmanifest
+      - apps/web_pwa/public/sw.js
+      - apps/web_pwa/public/pwa-icon.svg
+      - apps/web_pwa/index.html
+      - docs/decisions/ADR-004-vite-react-pwa-frontend.md
+      - CLAUDE.md
+      - .ai/current-state.yaml
+      - .ai/known-issues.yaml
+    validation:
+      - "npx tsc -b --noEmit (clean)"
+      - "npx vite build (52-53 modules transformed cleanly; final unlink/minify steps failed in this sandbox for environment-specific reasons unrelated to the code -- see known-issues)"
+
+  - date: 2026-08-02
+    id: BV-WEBPWA-LAUNCHER-002
+    summary: scripts/start-web-pwa.ps1's "Web PWA" window was opening and closing immediately with no visible error. Removed $ErrorActionPreference=Stop (which on PS 7.3+ turns npm's routine stderr/warnings into a silent terminating error), added an explicit npm-on-PATH check and a node_modules/vite-binary completeness check (auto-reinstalls if incomplete), and every exit path now prints the error and waits for a keypress instead of closing instantly.
+    changed_paths:
+      - scripts/start-web-pwa.ps1
+      - .ai/known-issues.yaml
+      - .ai/change-log.yaml
+
+  - date: 2026-08-02
+    id: BV-WEBPWA-LAUNCHER-001
+    summary: Start BhashaVaani.cmd never actually launched apps/web_pwa's dev server (it only ever started backend + Flutter), so port 6003 was unreachable even after the port collision fix. Added scripts/start-web-pwa.ps1 (auto npm-installs if needed, then npm run dev) and wired it into Start BhashaVaani.cmd as a third window; also added 6003 to stop-dev-ports.ps1's default port list.
+    changed_paths:
+      - scripts/start-web-pwa.ps1
+      - "Start BhashaVaani.cmd"
+      - scripts/stop-dev-ports.ps1
+      - apps/web_pwa/README.md
+      - .ai/known-issues.yaml
+      - .ai/change-log.yaml
+
+  - date: 2026-08-02
+    id: BV-WEBPWA-PORT-001
+    summary: Fixed apps/web_pwa being pinned to port 6002 (colliding with apps/mobile_flutter, which Start BhashaVaani.cmd already serves there) -- now runs on 6003, with backend CORS updated to allow both.
+    changed_paths:
+      - apps/web_pwa/vite.config.ts
+      - apps/web_pwa/README.md
+      - apps/api/app/main.py
+      - .ai/current-state.yaml
+      - .ai/known-issues.yaml
+
+  - date: 2026-08-02
+    id: BV-WEBPWA-001
+    summary: "Phase 1 of Vite/React PWA migration: scaffolded apps/web_pwa (side-by-side with apps/mobile_flutter), API client, app shell, and full-parity Profiles + Languages tabs. Lesson/Progress/Roadmap tabs are placeholders pending later phases. Backend untouched."
+    changed_paths:
+      - apps/web_pwa/
+      - .ai/current-state.yaml
+      - .ai/known-issues.yaml
+
+  - date: 2026-08-02
+    id: BV-NEXT-STUCK-001
+    summary: Fixed Next button appearing to only refresh the page and never advance the lesson. Root cause was reference-based list comparison in didUpdateWidget resetting activityIndex on every backend refetch triggered by _next(); now compares by activity id content.
+    changed_paths:
+      - apps/mobile_flutter/lib/features/learning_session/presentation/learning_session_screen.dart
+      - apps/mobile_flutter/lib/core/config/build_info.dart
+      - .ai/current-state.yaml
+      - .ai/known-issues.yaml
 
   - date: 2026-07-31
     id: BV-DEVPORTS-001

@@ -13,4 +13,6 @@ if (-not (Test-Path $python)) {
 
 Set-Location $apiRoot
 Write-Host "Starting BhashaVaani backend on http://127.0.0.1:6001"
-& $python -m uvicorn app.main:app --host 127.0.0.1 --port 6001
+# --reload watches apps/api and restarts uvicorn automatically when a .py
+# file changes, so backend code changes no longer need a manual stop/start.
+& $python -m uvicorn app.main:app --host 127.0.0.1 --port 6001 --reload --reload-dir app

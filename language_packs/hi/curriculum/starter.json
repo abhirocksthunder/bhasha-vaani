@@ -1,0 +1,132 @@
+{
+  "activities": [
+    {
+      "id": "hi_a1_starter_01",
+      "title": "Greeting",
+      "prompt": "Practise a respectful everyday greeting.",
+      "phrase": "Namaste",
+      "native_script": "नमस्ते",
+      "meaning": "Hello"
+    },
+    {
+      "id": "hi_a1_starter_02",
+      "title": "Water",
+      "prompt": "Practise asking for water.",
+      "phrase": "Mujhe paani chahiye",
+      "native_script": "मुझे पानी चाहिए",
+      "meaning": "I need water"
+    },
+    {
+      "id": "hi_a1_starter_03",
+      "title": "Thank you",
+      "prompt": "Practise a polite everyday phrase.",
+      "phrase": "Dhanyavaad",
+      "native_script": "धन्यवाद",
+      "meaning": "Thank you"
+    },
+    {
+      "id": "hi_a1_starter_04",
+      "title": "Yes",
+      "prompt": "Say a simple confirmation.",
+      "phrase": "Haan",
+      "native_script": "हाँ",
+      "meaning": "Yes"
+    },
+    {
+      "id": "hi_a1_starter_05",
+      "title": "No",
+      "prompt": "Say a simple refusal.",
+      "phrase": "Nahi",
+      "native_script": "नहीं",
+      "meaning": "No"
+    },
+    {
+      "id": "hi_a1_starter_06",
+      "title": "My name",
+      "prompt": "Practise introducing yourself.",
+      "phrase": "Mera naam Abhilash hai",
+      "native_script": "मेरा नाम अभिलाष है",
+      "meaning": "My name is Abhilash"
+    },
+    {
+      "title": "How are you",
+      "prompt": "Ask someone how they are doing today.",
+      "phrase": "Aap kaise hain?",
+      "native_script": "आप कैसे हैं?",
+      "meaning": "How are you?",
+      "id": "hi_a1_starter_07"
+    },
+    {
+      "title": "Excuse me",
+      "prompt": "Use this when you need to pass through a crowd.",
+      "phrase": "Kshama kijiye",
+      "native_script": "क्षमा कीजिये",
+      "meaning": "Excuse me",
+      "id": "hi_a1_starter_08"
+    },
+    {
+      "title": "Where is it?",
+      "prompt": "Ask for the location of something specific.",
+      "phrase": "Yeh kahan hai?",
+      "native_script": "यह कहाँ है?",
+      "meaning": "Where is this?",
+      "id": "hi_a1_starter_09"
+    },
+    {
+      "title": "How much?",
+      "prompt": "Use this when you are shopping and need a price.",
+      "phrase": "Kitne ka hai?",
+      "native_script": "कितने का है?",
+      "meaning": "How much is it?",
+      "id": "hi_a1_starter_10"
+    },
+    {
+      "title": "I don't know",
+      "prompt": "Say this when you cannot answer a question.",
+      "phrase": "Mujhe nahi pata",
+      "native_script": "मुझे नहीं पता",
+      "meaning": "I don't know",
+      "id": "hi_a1_starter_11"
+    },
+    {
+      "title": "Good morning",
+      "prompt": "Greet someone early in the day.",
+      "phrase": "Shubh prabhat",
+      "native_script": "शुभ प्रभात",
+      "meaning": "Good morning",
+      "id": "hi_a1_starter_12"
+    },
+    {
+      "title": "Take care",
+      "prompt": "Say this when you are leaving someone.",
+      "phrase": "Khayal rakhna",
+      "native_script": "ख्याल रखना",
+      "meaning": "Take care",
+      "id": "hi_a1_starter_13"
+    },
+    {
+      "title": "Can I eat?",
+      "prompt": "Ask if food is available for eating.",
+      "phrase": "Kya main kha sakta/sakti hoon?",
+      "native_script": "क्या मैं खा सकता/सकती हूँ?",
+      "meaning": "May I eat?",
+      "id": "hi_a1_starter_14"
+    },
+    {
+      "title": "Help me",
+      "prompt": "Use this when you are in trouble and need assistance.",
+      "phrase": "Meri madad karo",
+      "native_script": "मेरी मदद करो",
+      "meaning": "Help me",
+      "id": "hi_a1_starter_15"
+    },
+    {
+      "title": "Goodbye",
+      "prompt": "Say this when parting ways with someone.",
+      "phrase": "Alvida",
+      "native_script": "अलविदा",
+      "meaning": "Goodbye",
+      "id": "hi_a1_starter_16"
+    }
+  ]
+}

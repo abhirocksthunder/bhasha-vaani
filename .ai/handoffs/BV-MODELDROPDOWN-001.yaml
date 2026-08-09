@@ -1,0 +1,27 @@
+id: BV-MODELDROPDOWN-001
+date: 2026-08-01
+summary: Added an Ollama model dropdown to the lesson screen, per user request, so they can pick a model and click Generate plan instead of always using the gateway's auto-selected default.
+changed_paths:
+  - apps/mobile_flutter/lib/core/api/ollama_model.dart
+  - apps/mobile_flutter/lib/features/tutor_pet/presentation/tutor_pet_button.dart
+  - apps/mobile_flutter/lib/features/learning_session/domain/lesson_repository.dart
+  - apps/mobile_flutter/lib/features/learning_session/presentation/learning_session_screen.dart
+  - apps/mobile_flutter/lib/app/bhasha_vaani_app.dart
+  - apps/mobile_flutter/lib/core/config/build_info.dart
+validation:
+  - python3 -m unittest discover -s tests (apps/api) -> 29 tests passing, unaffected since this was a frontend-only change
+decisions:
+  - Reused the tutor pet's existing GET /providers/ollama/models fetch + OllamaModel pattern rather than inventing a new one. Extracted OllamaModel from tutor_pet_button.dart into core/api/ollama_model.dart so both the tutor pet and the lesson screen share one definition.
+  - One dropdown selects the model for BOTH the tutor and reviewer generation steps (matches the existing default behavior where both were already hardcoded to the same "local_ollama" route) -- did not add two separate tutor/reviewer dropdowns since the user asked for "a dropdown," singular.
+  - LearningSessionScreen previously took an unused `apiBaseUrl` String field (grepped the file; nothing in the widget body referenced it). Replaced it with an `apiClient` (ApiClient) field instead of adding a redundant second field, since the screen needs to call GET /providers/ollama/models directly, the same way TutorPetButton already does.
+  - onGenerateLessonPlan's signature changed from `Future<void> Function()` to `Future<void> Function(String? ollamaModel)`. bhasha_vaani_app.dart's _generateLessonPlan now takes that parameter and forwards it to lessonRepository.generateJourneyActivities(ollamaModel: ...), which builds the "ollama:<model>" route string (or falls back to "local_ollama" if null/empty, preserving old behavior when nothing is selected).
+manual_checks:
+  - traced the full data flow end to end (see change-log entry for the exact call chain)
+  - confirmed no other file in the repo referenced LearningSessionScreen.apiBaseUrl before removing it
+warnings:
+  - flutter pub get/analyze/test/build web NOT run (no Flutter/Dart toolchain in this sandbox). This change touches a public widget constructor signature (LearningSessionScreen) and a callback signature (onGenerateLessonPlan), so it is more likely than average to have a compile error I couldn't catch by hand -- prioritize running `flutter analyze` before anything else.
+  - Model list is fetched once in initState via _loadOllamaModels(); there's a manual refresh icon button next to the dropdown, but the list does not auto-refresh if models are installed/removed while the app is open.
+next_steps:
+  - Run flutter analyze / flutter test / flutter build web --wasm and fix any compile errors surfaced by the constructor/callback signature changes.
+  - Confirm in the running app that switching the dropdown and clicking Generate plan actually changes which model Ollama uses (e.g. by picking a smaller/faster model and observing a different tutor_model/reviewer_model in the result, or different generation speed).
+  - Circle back to the still-open question from before this request: why lesson generation was returning "Ollama returned an empty response" -- the model dropdown may help work around this (e.g. picking a non-reasoning model), but the underlying cause (likely qwen3:30b's thinking-mode tokens consuming the response budget before any JSON is emitted) has not been fixed in the backend yet.

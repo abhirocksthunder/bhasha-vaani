@@ -1,0 +1,24 @@
+id: BV-ROADMAP-001
+date: 2026-07-31
+summary: Wrote a staged implementation plan for the three most-wanted features (adaptive lessons from learning history, two-bot scenario conversation studio, personalized voice tutor) and added a Roadmap tab to the Flutter app that mirrors it with completion status.
+changed_paths:
+  - docs/product/roadmap-learning-features.md
+  - apps/mobile_flutter/lib/features/roadmap/domain/roadmap_stage.dart
+  - apps/mobile_flutter/lib/features/roadmap/presentation/roadmap_screen.dart
+  - apps/mobile_flutter/lib/app/home_shell.dart
+  - apps/mobile_flutter/lib/app/bhasha_vaani_app.dart
+  - .ai/current-state.yaml
+  - .ai/change-log.yaml
+validation:
+  - manual read-through of all changed Dart files for syntax and wiring correctness
+  - flutter/dart toolchain was not available in this sandbox session, so flutter analyze/flutter test/flutter build web were NOT run; run them before merging
+manual_checks:
+  - traced selectedIndex switch in bhasha_vaani_app.dart: 0 Profiles, 1 Languages, 2 Lesson, 3 Progress (now explicit), 4/default Roadmap
+  - confirmed NavigationRail and bottom NavigationBar destination lists both got a 5th "Roadmap" entry in home_shell.dart
+warnings:
+  - flutter analyze/flutter test/flutter build web must still be run on a machine with the Flutter SDK before this is considered verified.
+  - The Roadmap tab uses a static, hardcoded stage list (bhashaVaaniRoadmap in roadmap_stage.dart). It does not read live backend state. Keep it in sync manually with docs/product/roadmap-learning-features.md as stages ship.
+  - No backend changes were made in this pass; Stage 1-3 work items in the roadmap doc are all still planned, not implemented.
+next_steps:
+  - Start Stage 1.1 (harden two-model JSON generation reliability) since it unblocks Stage 2 and 3 quality.
+  - When a stage/step ships, flip its status in both docs/product/roadmap-learning-features.md and roadmap_stage.dart.

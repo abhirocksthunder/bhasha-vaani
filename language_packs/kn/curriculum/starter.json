@@ -1,0 +1,260 @@
+{
+  "activities": [
+    {
+      "id": "kn_a1_starter_01",
+      "title": "Greeting",
+      "prompt": "Practise a respectful everyday greeting.",
+      "phrase": "Namaskara",
+      "native_script": "ನಮಸ್ಕಾರ",
+      "meaning": "Hello"
+    },
+    {
+      "id": "kn_a1_starter_02",
+      "title": "Water",
+      "prompt": "Practise asking for water.",
+      "phrase": "Nanage neeru beku",
+      "native_script": "ನನಗೆ ನೀರು ಬೇಕು",
+      "meaning": "I need water"
+    },
+    {
+      "id": "kn_a1_starter_03",
+      "title": "Thank you",
+      "prompt": "Practise a polite everyday phrase.",
+      "phrase": "Dhanyavaadagalu",
+      "native_script": "ಧನ್ಯವಾದಗಳು",
+      "meaning": "Thank you"
+    },
+    {
+      "id": "kn_a1_starter_04",
+      "title": "Yes",
+      "prompt": "Say a simple confirmation.",
+      "phrase": "Howdu",
+      "native_script": "ಹೌದು",
+      "meaning": "Yes"
+    },
+    {
+      "id": "kn_a1_starter_05",
+      "title": "No",
+      "prompt": "Say a simple refusal.",
+      "phrase": "Illa",
+      "native_script": "ಇಲ್ಲ",
+      "meaning": "No"
+    },
+    {
+      "id": "kn_a1_starter_06",
+      "title": "Friendly question",
+      "prompt": "Practise asking how someone is.",
+      "phrase": "Hegiddira?",
+      "native_script": "ಹೇಗಿದ್ದೀರಾ?",
+      "meaning": "How are you?"
+    },
+    {
+      "id": "kn_a1_starter_07",
+      "title": "My name",
+      "prompt": "Practise introducing yourself.",
+      "phrase": "Nanna hesaru Abhilash",
+      "native_script": "ನನ್ನ ಹೆಸರು ಅಭಿಲಾಷ್",
+      "meaning": "My name is Abhilash"
+    },
+    {
+      "id": "kn_a1_starter_08",
+      "title": "Please",
+      "prompt": "Practise a polite request marker.",
+      "phrase": "Dayavittu",
+      "native_script": "ದಯವಿಟ್ಟು",
+      "meaning": "Please"
+    },
+    {
+      "id": "kn_a1_starter_09",
+      "title": "Food",
+      "prompt": "Practise asking for food.",
+      "phrase": "Nanage oota beku",
+      "native_script": "ನನಗೆ ಊಟ ಬೇಕು",
+      "meaning": "I need food"
+    },
+    {
+      "id": "kn_a1_starter_10",
+      "title": "Where",
+      "prompt": "Practise asking where something is.",
+      "phrase": "Idhu elli ide?",
+      "native_script": "ಇದು ಎಲ್ಲಿ ಇದೆ?",
+      "meaning": "Where is this?"
+    },
+    {
+      "id": "kn_a1_starter_11",
+      "title": "I do not understand",
+      "prompt": "Practise a useful repair phrase.",
+      "phrase": "Nanage artha agalilla",
+      "native_script": "ನನಗೆ ಅರ್ಥ ಆಗಲಿಲ್ಲ",
+      "meaning": "I did not understand"
+    },
+    {
+      "id": "kn_a1_starter_12",
+      "title": "Speak slowly",
+      "prompt": "Practise asking someone to slow down.",
+      "phrase": "Nidhana vagi heli",
+      "native_script": "ನಿಧಾನವಾಗಿ ಹೇಳಿ",
+      "meaning": "Please speak slowly"
+    },
+    {
+      "title": "Good Morning",
+      "prompt": "Practice saying good morning to an elder.",
+      "phrase": "Shubha udaya",
+      "native_script": "ಶುಭೋದಯ",
+      "meaning": "Good morning",
+      "id": "kn_a1_starter_13"
+    },
+    {
+      "title": "Bye Bye",
+      "prompt": "Use this when leaving friends or family.",
+      "phrase": "Beda",
+      "native_script": "ಬೆಡ",
+      "meaning": "Goodbye (informal)",
+      "id": "kn_a1_starter_14"
+    },
+    {
+      "title": "What is this?",
+      "prompt": "Point to an object and ask its name.",
+      "phrase": "Idu enu?",
+      "native_script": "ಇದು ಏನು?",
+      "meaning": "What is this?",
+      "id": "kn_a1_starter_15"
+    },
+    {
+      "title": "How much?",
+      "prompt": "Ask a vendor about the price of something.",
+      "phrase": "Eshtu?",
+      "native_script": "ಎಷ್ಟು?",
+      "meaning": "How much?",
+      "id": "kn_a1_starter_16"
+    },
+    {
+      "title": "Help me",
+      "prompt": "Use this if you are lost or need assistance.",
+      "phrase": "Nanna sahayakke kelabeku",
+      "native_script": "ನನ್ನ ಸಹಾಯಕ್ಕೆ ಕೇಳಬೇಕು",
+      "meaning": "I need help",
+      "id": "kn_a1_starter_17"
+    },
+    {
+      "title": "Tasty",
+      "prompt": "Compliment the food you just ate.",
+      "phrase": "Swaadishtavagutha",
+      "native_script": "ಸ್ವಾದಿಷ್ಟವಾಗಿದೆ",
+      "meaning": "It is tasty",
+      "id": "kn_a1_starter_18"
+    },
+    {
+      "title": "Where is...?",
+      "prompt": "Ask for directions to a specific place like the station.",
+      "phrase": "Bus stand elli?",
+      "native_script": "ಬಸ್ ಸ್ಟ್ಯಾಂಡ್ ಎಲ್ಲಿ?",
+      "meaning": "Where is the bus stand?",
+      "id": "kn_a1_starter_19"
+    },
+    {
+      "title": "Take care",
+      "prompt": "Say this when parting ways with someone you care about.",
+      "phrase": "Sathya irali",
+      "native_script": "ಸತ್ಯ ಇರಲಿ",
+      "meaning": "Be safe/Take care",
+      "id": "kn_a1_starter_20"
+    },
+    {
+      "title": "Good Night",
+      "prompt": "Use this before going to sleep.",
+      "phrase": "Shubha ratri",
+      "native_script": "ಶುಭರಾತ್ರಿ",
+      "meaning": "Good night",
+      "id": "kn_a1_starter_21"
+    },
+    {
+      "title": "See you",
+      "prompt": "A casual way to say goodbye when meeting again soon.",
+      "phrase": "Mele kaṇi",
+      "native_script": "ಮಳೆ ಕಣಿ",
+      "meaning": "See you",
+      "id": "kn_a1_starter_22"
+    },
+    {
+      "title": "Where to go",
+      "prompt": "Ask someone for directions to a specific place.",
+      "phrase": "Railway station elli?",
+      "native_script": "ರೈಲ್ವೇ ಸ್ಟೇಷನ್ ಎಲ್ಲಿ?",
+      "meaning": "Where is the railway station?",
+      "id": "kn_a1_starter_23"
+    },
+    {
+      "title": "How much cost",
+      "prompt": "Inquire about the price of an item.",
+      "phrase": "Idu eshtu baa?",
+      "native_script": "ಇದು ಎಷ್ಟು ಬಾ?",
+      "meaning": "How much is this?",
+      "id": "kn_a1_starter_24"
+    },
+    {
+      "title": "Good luck",
+      "prompt": "Wish someone well for an upcoming event.",
+      "phrase": "Shubha mangala",
+      "native_script": "ಶುಭ ಮಂಗಳ",
+      "meaning": "Good luck/Auspicious",
+      "id": "kn_a1_starter_25"
+    },
+    {
+      "title": "I want to buy",
+      "prompt": "State your intention to purchase something.",
+      "phrase": "Nanage idu kottabeku",
+      "native_script": "ನನಗೆ ಇದು ಕೊಟ್ಬೇಕು",
+      "meaning": "I need to buy this",
+      "id": "kn_a1_starter_26"
+    },
+    {
+      "title": "Which one",
+      "prompt": "Ask for clarification when faced with choices.",
+      "phrase": "Yava ondu?",
+      "native_script": "ಯಾವ ಒಂದು?",
+      "meaning": "Which one?",
+      "id": "kn_a1_starter_27"
+    },
+    {
+      "title": "Taste good",
+      "prompt": "Comment positively on the flavor of something.",
+      "phrase": "Sari swaadagide",
+      "native_script": "ಸರಿ ಸ್ವಾದಾಗಿದೆ",
+      "meaning": "It tastes good",
+      "id": "kn_a1_starter_28"
+    },
+    {
+      "title": "Do you speak English",
+      "prompt": "Ask if the person understands English.",
+      "phrase": "Nivvu English maatana?",
+      "native_script": "ನೀವು ಇಂಗ್ಲಿಷ್ ಮಾತಾಡಾ?",
+      "meaning": "Do you speak English?",
+      "id": "kn_a1_starter_29"
+    },
+    {
+      "title": "Come here",
+      "prompt": "Direct someone to approach your location.",
+      "phrase": "Illi bandu",
+      "native_script": "ಇಲ್ಲಿ ಬಂದು",
+      "meaning": "Come here",
+      "id": "kn_a1_starter_30"
+    },
+    {
+      "title": "What time",
+      "prompt": "Ask about the current or future time.",
+      "phrase": "Samayavu eshtu?",
+      "native_script": "ಸಮಯ ಎಷ್ಟು?",
+      "meaning": "What is the time?",
+      "id": "kn_a1_starter_31"
+    },
+    {
+      "title": "See you tomorrow",
+      "prompt": "Say goodbye with an expectation to meet next day.",
+      "phrase": "Nannalli beku",
+      "native_script": "ನಾಳಲ್ಲಿ ಬೇಕು",
+      "meaning": "See you tomorrow",
+      "id": "kn_a1_starter_32"
+    }
+  ]
+}

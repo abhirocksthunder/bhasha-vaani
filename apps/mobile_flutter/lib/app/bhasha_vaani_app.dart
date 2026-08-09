@@ -11,10 +11,12 @@ import '../features/learning_session/presentation/learning_session_screen.dart';
 import '../features/profiles/domain/learner_profile.dart';
 import '../features/profiles/domain/profile_repository.dart';
 import '../features/profiles/presentation/profile_selection_screen.dart';
+import '../features/progress/domain/learned_word.dart';
 import '../features/progress/domain/progress_repository.dart';
 import '../features/progress/domain/progress_outbox_repository.dart';
 import '../features/progress/domain/progress_summary.dart';
 import '../features/progress/presentation/progress_screen.dart';
+import '../features/roadmap/presentation/roadmap_screen.dart';
 import '../features/tutor_pet/presentation/tutor_pet_button.dart';
 import 'app_load_state.dart';
 import 'bhasha_vaani_theme.dart';
@@ -42,8 +44,12 @@ class _BhashaVaaniAppState extends State<BhashaVaaniApp> {
   LearnerProfile? selectedProfile;
   LanguagePack? selectedLanguage;
   ProgressSummary? progressSummary;
+  List<LearnedWord> learnedWords = const [];
+  bool loadingLearnedWords = false;
   AppLoadState loadState = const AppLoadState.loading();
   String? completionMessage;
+  bool completionMessageIsError = false;
+  bool generatingLessonPlan = false;
   int queuedEventCount = 0;
   int selectedIndex = 0;
   int clientSequence = 0;
@@ -96,6 +102,7 @@ class _BhashaVaaniAppState extends State<BhashaVaaniApp> {
       title: 'Greeting',
       prompt: 'Listen and repeat a basic Kannada greeting.',
       phrase: 'Namaskara',
+      nativeScript: 'ನಮಸ್ಕಾರ',
       meaning: 'Hello',
     ),
     LessonActivity(
@@ -103,6 +110,7 @@ class _BhashaVaaniAppState extends State<BhashaVaaniApp> {
       title: 'Useful phrase',
       prompt: 'Practise asking for water.',
       phrase: 'Nanage neeru beku',
+      nativeScript: 'ನನಗೆ ನೀರು ಬೇಕು',
       meaning: 'I need water',
     ),
     LessonActivity(
@@ -110,6 +118,7 @@ class _BhashaVaaniAppState extends State<BhashaVaaniApp> {
       title: 'Thank you',
       prompt: 'Practise a polite everyday phrase.',
       phrase: 'Dhanyavaadagalu',
+      nativeScript: 'ಧನ್ಯವಾದಗಳು',
       meaning: 'Thank you',
     ),
     LessonActivity(
@@ -117,6 +126,7 @@ class _BhashaVaaniAppState extends State<BhashaVaaniApp> {
       title: 'Yes',
       prompt: 'Say a simple confirmation.',
       phrase: 'Howdu',
+      nativeScript: 'ಹೌದು',
       meaning: 'Yes',
     ),
     LessonActivity(
@@ -124,6 +134,7 @@ class _BhashaVaaniAppState extends State<BhashaVaaniApp> {
       title: 'No',
       prompt: 'Say a simple refusal.',
       phrase: 'Illa',
+      nativeScript: 'ಇಲ್ಲ',
       meaning: 'No',
     ),
     LessonActivity(
@@ -131,6 +142,7 @@ class _BhashaVaaniAppState extends State<BhashaVaaniApp> {
       title: 'How are you?',
       prompt: 'Practise a friendly question.',
       phrase: 'Hegiddira?',
+      nativeScript: 'ಹೇಗಿದ್ದೀರಾ?',
       meaning: 'How are you?',
     ),
   ];
@@ -204,14 +216,17 @@ class _BhashaVaaniAppState extends State<BhashaVaaniApp> {
               profile: profile,
               language: language,
               activities: activities,
-              apiBaseUrl: widget.config.apiBaseUrl,
+              apiClient: apiClient,
               loadState: loadState,
               completionMessage: completionMessage,
+              completionMessageIsError: completionMessageIsError,
               queuedEventCount: queuedEventCount,
               onRetryConnection: _loadInitialData,
               onActivityCompleted: _recordActivityCompleted,
+              onGenerateLessonPlan: _generateLessonPlan,
+              generatingLessonPlan: generatingLessonPlan,
             ),
-          _ => ProgressScreen(
+          3 => ProgressScreen(
               summary: progressSummary ??
                   ProgressSummary.seed(
                     profileName: profile?.displayName ?? 'Learner',
@@ -220,7 +235,10 @@ class _BhashaVaaniAppState extends State<BhashaVaaniApp> {
               loadState: loadState,
               queuedEventCount: queuedEventCount,
               onRetry: _refreshProgress,
+              learnedWords: learnedWords,
+              loadingLearnedWords: loadingLearnedWords,
             ),
+          _ => const RoadmapScreen(),
         },
       ),
     );
@@ -282,6 +300,7 @@ class _BhashaVaaniAppState extends State<BhashaVaaniApp> {
         loadState = const AppLoadState.connected();
       });
       await _refreshLessonJourney();
+      await _refreshLearnedWords();
     } catch (error) {
       if (!mounted) {
         return;
@@ -311,6 +330,7 @@ class _BhashaVaaniAppState extends State<BhashaVaaniApp> {
     try {
       setState(() {
         completionMessage = 'Saving progress...';
+        completionMessageIsError = false;
       });
       await progressRepository.uploadEvent(event);
       await _refreshProgress();
@@ -319,6 +339,7 @@ class _BhashaVaaniAppState extends State<BhashaVaaniApp> {
       }
       setState(() {
         completionMessage = 'Progress saved to backend';
+        completionMessageIsError = false;
       });
       await _refreshLessonJourney();
     } catch (error) {
@@ -331,6 +352,7 @@ class _BhashaVaaniAppState extends State<BhashaVaaniApp> {
       setState(() {
         loadState = AppLoadState.fallback(error.toString());
         completionMessage = 'Completion queued for sync';
+        completionMessageIsError = false;
       });
     }
   }
@@ -399,6 +421,98 @@ class _BhashaVaaniAppState extends State<BhashaVaaniApp> {
       setState(() {
         activities = seedActivities;
       });
+    }
+  }
+
+  Future<void> _refreshLearnedWords() async {
+    final profile = selectedProfile;
+    final language = selectedLanguage;
+    if (profile == null || language == null) {
+      return;
+    }
+
+    setState(() => loadingLearnedWords = true);
+
+    try {
+      final words = await progressRepository.fetchLearnedWords(
+        profile: profile,
+        language: language,
+      );
+      if (!mounted) {
+        return;
+      }
+
+      setState(() => learnedWords = words);
+    } catch (_) {
+      // Keep whatever was last loaded rather than clearing history just
+      // because a single refresh failed (e.g. a transient network blip).
+    } finally {
+      if (mounted) {
+        setState(() => loadingLearnedWords = false);
+      }
+    }
+  }
+
+  Future<void> _generateLessonPlan(String? ollamaModel) async {
+    final profile = selectedProfile;
+    final language = selectedLanguage;
+    if (profile == null || language == null || generatingLessonPlan) {
+      return;
+    }
+
+    setState(() {
+      generatingLessonPlan = true;
+      completionMessage = ollamaModel == null || ollamaModel.isEmpty
+          ? 'Generating lesson plan...'
+          : 'Generating lesson plan with $ollamaModel...';
+      completionMessageIsError = false;
+    });
+
+    try {
+      final generatedActivities = await lessonRepository.generateJourneyActivities(
+        profile: profile,
+        language: language,
+        ollamaModel: ollamaModel,
+      );
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        activities = generatedActivities.isEmpty ? seedActivities : generatedActivities;
+        loadState = const AppLoadState.connected();
+        completionMessage = 'Generated adaptive lesson plan';
+        completionMessageIsError = false;
+      });
+      await _refreshProgress();
+    } on LessonGenerationException catch (error) {
+      // The backend explicitly rejected the generated plan (and correctly
+      // never saved it) rather than failing to connect. Show the real
+      // reason instead of a generic message, and do not touch loadState/
+      // activities: falsely claiming success here previously masked
+      // repeated generation failures behind the unchanged starter catalog.
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        completionMessage = 'Could not generate a new lesson plan: ${error.reason}';
+        completionMessageIsError = true;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        loadState = AppLoadState.fallback(error.toString());
+        completionMessage = 'Could not reach the backend to generate a lesson plan';
+        completionMessageIsError = true;
+      });
+    } finally {
+      if (mounted) {
+        setState(() => generatingLessonPlan = false);
+      }
     }
   }
 
